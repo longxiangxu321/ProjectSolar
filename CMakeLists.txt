@@ -85,6 +85,7 @@ set(optix_LIBRARY "")
 # rendering
 add_subdirectory(image_renderer)
 add_subdirectory(obj_viewer)
+add_subdirectory(fisheye_renderer)
 
 
 

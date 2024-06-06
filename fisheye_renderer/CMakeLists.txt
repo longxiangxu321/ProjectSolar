@@ -20,7 +20,7 @@ include_directories(${OptiX_INCLUDE})
 
 cuda_compile_and_embed(embedded_ptx_code devicePrograms.cu)
 
-add_executable(image_Render
+add_executable(fishEye_Render
   ${embedded_ptx_code}
   optix7.h
   CUDABuffer.h
@@ -32,7 +32,7 @@ add_executable(image_Render
   main.cpp
   )
 
-target_link_libraries(image_Render
+target_link_libraries(fishEye_Render
   gdt
   # optix dependencies, for rendering
   ${optix_LIBRARY}

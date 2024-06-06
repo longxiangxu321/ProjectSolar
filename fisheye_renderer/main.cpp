@@ -130,7 +130,7 @@ namespace osc {
       //                   /* at */model->bounds.center()-vec3f(0,400,0),
       //                   /* up */vec3f(0.f,1.f,0.f) };
       model->transformModel();
-      vec3f lookfrom = model->bounds.center() + vec3f(0, 0, 10);
+      vec3f lookfrom = model->bounds.center() + vec3f(0, 0, 500);
       vec3f lookat = model->bounds.center();
 
       Camera camera = { /*from*/ lookfrom,
@@ -148,7 +148,7 @@ namespace osc {
       std::vector<uint32_t> pixels(fbSize.x*fbSize.y);
       renderer->downloadPixels(pixels.data());
 
-      const std::string fileName = "rendered.png";
+      const std::string fileName = "rendered_fisheye.png";
       stbi_write_png(fileName.c_str(),fbSize.x,fbSize.y,4,
                      pixels.data(),fbSize.x*sizeof(uint32_t));
       std::cout << GDT_TERMINAL_GREEN
