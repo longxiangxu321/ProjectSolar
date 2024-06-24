@@ -22,6 +22,9 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "3rdParty/stb_image_write.h"
 
+#include <chrono>
+
+
 /*! \namespace osc - Optix Siggraph Course */
 namespace osc {
 
@@ -130,32 +133,65 @@ namespace osc {
       //                   /* at */model->bounds.center()-vec3f(0,400,0),
       //                   /* up */vec3f(0.f,1.f,0.f) };
       model->transformModel();
-      vec3f lookfrom = model->bounds.center() + vec3f(0, 0, 500);
-      vec3f lookat = model->bounds.center();
 
-      Camera camera = { /*from*/ lookfrom,
-                  /* at */ lookat,
-                  /* up */ vec3f(0.f, 1.f, 0.f) };
-      // something approximating the scale of the world, so the
-      // camera knows how much to move for any given user interaction:
+      // vec3f lookfrom = model->bounds.center() + vec3f(0, 0, 500);
+      // vec3f lookat = model->bounds.center();
+
+      // Camera camera = { /*from*/ lookfrom,
+      //             /* at */ lookat,
+      //             /* up */ vec3f(0.f, 1.f, 0.f) };
+      // // something approximating the scale of the world, so the
+      // // camera knows how much to move for any given user interaction:
+      // SampleRenderer *renderer = new SampleRenderer(model);
+
+      // const vec2i fbSize(vec2i(360,90));
+      // renderer->resize(fbSize);
+      // renderer->setCamera(camera);
+      // renderer->render();
+
+      // std::vector<uint32_t> pixels(fbSize.x*fbSize.y);
+      // renderer->downloadPixels(pixels.data());
+
+      // const std::string fileName = "rendered_fisheye.png";
+      // stbi_write_png(fileName.c_str(),fbSize.x,fbSize.y,4,
+      //                pixels.data(),fbSize.x*sizeof(uint32_t));
+
       SampleRenderer *renderer = new SampleRenderer(model);
-
       const vec2i fbSize(vec2i(360,90));
-      renderer->resize(fbSize);
-      renderer->setCamera(camera);
-      renderer->render();
 
-      std::vector<uint32_t> pixels(fbSize.x*fbSize.y);
-      renderer->downloadPixels(pixels.data());
+      auto start = std::chrono::high_resolution_clock::now();
+      std::vector<vec3f> lookfroms = {vec3f(-10.07f, 20.681f, 20), vec3f(0, 0, 20), vec3f(300, 100, 10), vec3f(200, -50, 15)};
+      for (int i = 0; i < lookfroms.size(); i++) {
+        Camera camera = { /*from*/lookfroms[i],
+                          /* at */model->bounds.center()-vec3f(0,400,0),
+                          /* up */vec3f(0.f,1.f,0.f) };
+        renderer->resize(fbSize);
+        renderer->setCamera(camera);
+        renderer->render();
+        std::vector<uint32_t> pixels(fbSize.x*fbSize.y);
+        renderer->downloadPixels(pixels.data());
+        // const std::string fileName = "rendered_fisheye_" + std::to_string(i) + ".png";
+        // stbi_write_png(fileName.c_str(),fbSize.x,fbSize.y,4,
+        //                pixels.data(),fbSize.x*sizeof(uint32_t));
+        // std::cout << GDT_TERMINAL_GREEN
+        //     << std::endl
+        //     << "Image rendered, and saved to " << fileName << " ... done." << std::endl
+        //     << GDT_TERMINAL_DEFAULT
+        //     << std::endl;
+      }
 
-      const std::string fileName = "rendered_fisheye.png";
-      stbi_write_png(fileName.c_str(),fbSize.x,fbSize.y,4,
-                     pixels.data(),fbSize.x*sizeof(uint32_t));
-      std::cout << GDT_TERMINAL_GREEN
-                << std::endl
-                << "Image rendered, and saved to " << fileName << " ... done." << std::endl
-                << GDT_TERMINAL_DEFAULT
-                << std::endl;
+      auto end = std::chrono::high_resolution_clock::now();
+
+      std::chrono::duration<double, std::milli> elapsed = end - start; // 计算经过的毫秒数
+
+      std::cout << "Total rendering time: " << elapsed.count() << " ms" << std::endl;
+
+
+      // std::cout << GDT_TERMINAL_GREEN
+      //           << std::endl
+      //           << "Image rendered, and saved to " << fileName << " ... done." << std::endl
+      //           << GDT_TERMINAL_DEFAULT
+      //           << std::endl;
 
       
     } catch (std::runtime_error& e) {
