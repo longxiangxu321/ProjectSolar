@@ -165,7 +165,7 @@ namespace osc {
         Model *model = new Model;
         std::unordered_set<std::string> targetTypes = {"WallSurface", "RoofSurface"};
 
-        std::map<int, int> vertexMap;
+        // std::map<int, int> vertexMap;
 
         std::fstream input(jsonFile);
         json j;
@@ -187,45 +187,52 @@ namespace osc {
                 for (auto &g: co.value()["geometry"]) {
                     for (int i = 0; i< g["boundaries"][0].size(); i++) {
                         std::vector<std::vector<int>> triangle = g["boundaries"][0][i];
-                                if (triangle[0].size() != 3 || 
-                                    triangle[0][0]==triangle[0][1] || 
-                                    triangle[0][0]==triangle[0][2] || 
-                                    triangle[0][1]==triangle[0][2]) {
-                                    int gmlid_int = g["semantics"]["surfaces"][i]["global_idx"];
-                                    std::cout<<"a triangle is not valid, identifier: "<<gmlid_int<<std::endl;
-                                    continue;
-                                }
-                                std::string surf_type = g["semantics"]["surfaces"][i]["type"];
+                        if (triangle[0].size() != 3 || 
+                            triangle[0][0]==triangle[0][1] || 
+                            triangle[0][0]==triangle[0][2] || 
+                            triangle[0][1]==triangle[0][2]) {
+                            int gmlid_int = g["semantics"]["surfaces"][i]["global_idx"];
+                            std::cout<<"a triangle is not valid, identifier: "<<gmlid_int<<std::endl;
+                            continue;
+                        }  
+                        else{
+                            std::string surf_type = g["semantics"]["surfaces"][i]["type"];
+                            if (targetTypes.find(surf_type) != targetTypes.end()) {
+                                int gmlid_int = g["semantics"]["surfaces"][i]["global_idx"];
+                                int global_v0 = triangle[0][0];
+                                int global_v1 = triangle[0][1];
+                                int global_v2 = triangle[0][2];
 
-                                if (targetTypes.find(surf_type) != targetTypes.end()) {
-                                    int gmlid_int = g["semantics"]["surfaces"][i]["global_idx"];
-                                    int global_v0 = triangle[0][0];
-                                    int global_v1 = triangle[0][1];
-                                    int global_v2 = triangle[0][2];
+                                int local_v0 = addOrGetVertexIndex(vertexMap, global_v0);
+                                int local_v1 = addOrGetVertexIndex(vertexMap, global_v1);
+                                int local_v2 = addOrGetVertexIndex(vertexMap, global_v2);
 
-                                    int local_v0 = addOrGetVertexIndex(vertexMap, global_v0);
-                                    int local_v1 = addOrGetVertexIndex(vertexMap, global_v1);
-                                    int local_v2 = addOrGetVertexIndex(vertexMap, global_v2);
+                                mesh->index.push_back(vec3i(local_v0, local_v1, local_v2));
+                                vec3f vx = lspts[global_v0];
+                                vec3f vy = lspts[global_v1];
+                                vec3f vz = lspts[global_v2];
+                                vec3f normal = normalize(cross(vy - vx, vz - vx));
+                                mesh->normal.push_back(normal);
+                                mesh->materialID.push_back(gmlid_int);
+                                total_triangles++;
 
-                                    mesh->index.push_back(vec3i(local_v0, local_v1, local_v2));
-                                    vec3f vx = lspts[global_v0];
-                                    vec3f vy = lspts[global_v1];
-                                    vec3f vz = lspts[global_v2];
-                                    vec3f normal = normalize(cross(vy - vx, vz - vx));
-                                    mesh->normal.push_back(normal);
-                                    mesh->materialID.push_back(gmlid_int);
-                                    total_triangles++;
-
-                                }
+                            }
+                            else {
+                                continue;
+                            }
+                        }
   
                     }
                 }
+                
+                
                 mesh->diffuse = gdt::randomColor(building_index);
                 building_index++;
 
                 for (const auto& entry : vertexMap) {
                       mesh->vertex.push_back(lspts[entry.first]);
                     }
+                vertexMap.clear();
                 
                 assert(mesh->vertex.size() == vertexMap.size());
                 assert(mesh->index.size() == mesh->normal.size());
@@ -235,14 +242,15 @@ namespace osc {
                 
                 if (mesh->vertex.size() > 0 && mesh->index.size() > 0){
                     model->meshes.push_back(mesh);
-                }
-                else {
+                }   else {
                     std::cout<<"Empty mesh, deleting"<< building_index <<std::endl;
                     delete mesh;
                 }
             }
 
         }
+
+
 
         std::cout<<"bouding box low "<<model->bounds.lower.x<<" "<<model->bounds.lower.y<<" "<<model->bounds.lower.z<<std::endl;
         std::cout<<"bouding box high "<<model->bounds.upper.x<<" "<<model->bounds.upper.y<<" "<<model->bounds.upper.z<<std::endl;

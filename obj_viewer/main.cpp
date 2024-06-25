@@ -113,11 +113,11 @@ namespace osc {
   extern "C" int main(int ac, char **av)
   {
     try {
-      Model *model = loadOBJ(
+      Model *model = loadCityJSON(
 #ifdef _WIN32
       // on windows, visual studio creates _two_ levels of build dir
       // (x86/Release)
-      "../../models/sponza.obj"
+      "../../models/delft.city.json"
 #else
       // on linux, common practice is to have ONE level of build dir
       // (say, <project>/build/)...
@@ -127,7 +127,7 @@ namespace osc {
       // Camera camera = { /*from*/vec3f(-10.07f, 20.681f, -2.7304f),
       //                   /* at */model->bounds.center()-vec3f(0,400,0),
       //                   /* up */vec3f(0.f,1.f,0.f) };
-      model->transformModel();
+      // model->transformModel();
       vec3f lookfrom = model->bounds.center() + vec3f(0, 0, 1000);
       vec3f lookat = model->bounds.center();
 
