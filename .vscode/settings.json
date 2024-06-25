@@ -64,6 +64,15 @@
         "xmemory": "cpp",
         "xtr1common": "cpp",
         "xtree": "cpp",
-        "xutility": "cpp"
+        "xutility": "cpp",
+        "any": "cpp",
+        "array": "cpp",
+        "codecvt": "cpp",
+        "filesystem": "cpp",
+        "numeric": "cpp",
+        "ranges": "cpp",
+        "span": "cpp",
+        "unordered_set": "cpp",
+        "valarray": "cpp"
     }
 }
