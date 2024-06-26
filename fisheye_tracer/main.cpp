@@ -25,6 +25,7 @@
 #include <chrono>
 #include <cstdlib>
 #include <ctime>
+#include "sample_pointGrid.h"
 
 /*! \namespace osc - Optix Siggraph Course */
 namespace osc {
@@ -35,11 +36,11 @@ namespace osc {
   extern "C" int main(int ac, char **av)
   {
     try {
-      Model *model = loadCityJSON(
+      Model *model = loadOBJ(
 #ifdef _WIN32
       // on windows, visual studio creates _two_ levels of build dir
       // (x86/Release)
-      "../../models/delft.city.json"
+      "../../models/sponza.obj"
 #else
       // on linux, common practice is to have ONE level of build dir
       // (say, <project>/build/)...
@@ -49,6 +50,9 @@ namespace osc {
 
       model->transformModel();
 
+      std::vector<GridPoint> gridpoints= create_point_grid(*model);
+      std::cout<<"Grid points created: "<< gridpoints.size()<<std::endl;
+    
       SampleRenderer *renderer = new SampleRenderer(model);
       const vec2i fbSize(vec2i(360,90));
 

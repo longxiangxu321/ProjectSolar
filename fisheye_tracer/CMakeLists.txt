@@ -27,6 +27,8 @@ add_executable(fishEye_Tracer
   LaunchParams.h
   SampleRenderer.h
   SampleRenderer.cpp
+  sample_PointGrid.h
+  sample_PointGrid.cpp
   Model.h
   Model.cpp
   main.cpp
