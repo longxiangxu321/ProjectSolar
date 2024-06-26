@@ -176,8 +176,6 @@ namespace osc {
             model->bounds.extend(lspt);
         }
 
-        std::cout<<"num points: "<<lspts.size()<<std::endl;
-
         int building_index = 0;
         int total_triangles = 0;
 
@@ -196,8 +194,7 @@ namespace osc {
                             triangle[0][0]==triangle[0][1] || 
                             triangle[0][0]==triangle[0][2] || 
                             triangle[0][1]==triangle[0][2]) {
-                            // int gmlid_int = g["semantics"]["surfaces"][i]["global_idx"];
-                            int gmlid_int = 1;
+                            int gmlid_int = g["semantics"]["surfaces"][i]["global_idx"];
 
                             std::cout<<"a triangle is not valid, identifier: "<<gmlid_int<<std::endl;
                             continue;
@@ -205,8 +202,7 @@ namespace osc {
                         else{
                             // std::string surf_type = g["semantics"]["surfaces"][i]["type"];
                             // if (targetTypes.find(surf_type) != targetTypes.end()) {
-                                // int gmlid_int = g["semantics"]["surfaces"][i]["global_idx"];
-                                int gmlid_int = 1;
+                                int gmlid_int = g["semantics"]["surfaces"][i]["global_idx"];
                                 int global_v0 = triangle[0][0];
                                 int global_v1 = triangle[0][1];
                                 int global_v2 = triangle[0][2];
@@ -236,28 +232,10 @@ namespace osc {
                                 vec3f vx = lspts[global_v0];
                                 vec3f vy = lspts[global_v1];
                                 vec3f vz = lspts[global_v2];
-
-                                
-
-
-
-                                if (total_triangles < 5) {
-                                    std::cout<< "vx: "<<vx<<" vy: "<<vy<<" vz: "<<vz<<std::endl;
-                                }
                                 vec3f normal = normalize(cross(vy - vx, vz - vx));
                                 mesh->normal.push_back(normal);
                                 mesh->materialID.push_back(gmlid_int);
                                 total_triangles++;
-                                if (total_triangles < 5) {
-                                    std::cout<< "local_v0: "<<local_v0<<" local_v1: "<<local_v1<<" local_v2: "<<local_v2<<std::endl;
-                                    std::cout<< "global_v0: "<<global_v0<<" global_v1: "<<global_v1<<" global_v2: "<<global_v2<<std::endl;
-                                    std::cout <<"finish" <<std::endl;
-                                }
-
-                            // }
-                            // else {
-                            //     continue;
-                            // }
                         }
   
                     }
@@ -266,16 +244,10 @@ namespace osc {
                 
                 mesh->diffuse = gdt::randomColor(building_index);
                 building_index++;
-
-                // for (const auto& entry : vertexMap) {
-                //       mesh->vertex.push_back(lspts[entry.first]);
-                //     }
-                // vertexMap.clear();
                 
                 assert(mesh->vertex.size() == vertexMap.size());
                 assert(mesh->index.size() == mesh->normal.size());
                 assert(mesh->index.size() == mesh->materialID.size());
-                // std::cout<< co.value()["type"] << "building "<<building_index<<" has "<<mesh->vertex.size()<<" vertices"<<std::endl;
 
                 
                 if (mesh->vertex.size() > 0 && mesh->index.size() > 0){

@@ -15,7 +15,7 @@ namespace osc {
           vertexMap[globalIndex] = localIndex;
           return localIndex;
       }
-}
+    }   
 
     void Model::transformModel() {
         for (auto mesh : meshes) {
@@ -179,10 +179,13 @@ namespace osc {
         int building_index = 0;
         int total_triangles = 0;
 
+        TriangleMesh *mesh = nullptr;
+        std::map<int, int> vertexMap;
+
         for (auto &co: j["CityObjects"].items()) {
             if (co.value()["type"] == "BuildingPart") {
-                std::map<int, int> vertexMap;
-                TriangleMesh *mesh = new TriangleMesh;
+                vertexMap.clear();
+                mesh = new TriangleMesh;
 
                 for (auto &g: co.value()["geometry"]) {
                     for (int i = 0; i< g["boundaries"][0].size(); i++) {
@@ -192,20 +195,38 @@ namespace osc {
                             triangle[0][0]==triangle[0][2] || 
                             triangle[0][1]==triangle[0][2]) {
                             int gmlid_int = g["semantics"]["surfaces"][i]["global_idx"];
+
                             std::cout<<"a triangle is not valid, identifier: "<<gmlid_int<<std::endl;
                             continue;
                         }  
                         else{
-                            std::string surf_type = g["semantics"]["surfaces"][i]["type"];
-                            if (targetTypes.find(surf_type) != targetTypes.end()) {
+                            // std::string surf_type = g["semantics"]["surfaces"][i]["type"];
+                            // if (targetTypes.find(surf_type) != targetTypes.end()) {
                                 int gmlid_int = g["semantics"]["surfaces"][i]["global_idx"];
                                 int global_v0 = triangle[0][0];
                                 int global_v1 = triangle[0][1];
                                 int global_v2 = triangle[0][2];
 
+                                int original_size = vertexMap.size();
+
                                 int local_v0 = addOrGetVertexIndex(vertexMap, global_v0);
+
+                                if (original_size != vertexMap.size()) {
+                                    mesh->vertex.push_back(lspts[global_v0]);
+                                }
+
+                                original_size = vertexMap.size();
                                 int local_v1 = addOrGetVertexIndex(vertexMap, global_v1);
+                                if (original_size != vertexMap.size()) {
+                                    mesh->vertex.push_back(lspts[global_v1]);
+                                }
+
+                                original_size = vertexMap.size();
                                 int local_v2 = addOrGetVertexIndex(vertexMap, global_v2);
+                                if (original_size != vertexMap.size()) {
+                                    mesh->vertex.push_back(lspts[global_v2]);
+                                }
+                                // std::cout<<"local_v0: "<<local_v0<<" local_v1: "<<local_v1<<" local_v2: "<<local_v2<<std::endl;
 
                                 mesh->index.push_back(vec3i(local_v0, local_v1, local_v2));
                                 vec3f vx = lspts[global_v0];
@@ -215,11 +236,6 @@ namespace osc {
                                 mesh->normal.push_back(normal);
                                 mesh->materialID.push_back(gmlid_int);
                                 total_triangles++;
-
-                            }
-                            else {
-                                continue;
-                            }
                         }
   
                     }
@@ -228,16 +244,10 @@ namespace osc {
                 
                 mesh->diffuse = gdt::randomColor(building_index);
                 building_index++;
-
-                for (const auto& entry : vertexMap) {
-                      mesh->vertex.push_back(lspts[entry.first]);
-                    }
-                vertexMap.clear();
                 
                 assert(mesh->vertex.size() == vertexMap.size());
                 assert(mesh->index.size() == mesh->normal.size());
                 assert(mesh->index.size() == mesh->materialID.size());
-                // std::cout<< co.value()["type"] << "building "<<building_index<<" has "<<mesh->vertex.size()<<" vertices"<<std::endl;
 
                 
                 if (mesh->vertex.size() > 0 && mesh->index.size() > 0){

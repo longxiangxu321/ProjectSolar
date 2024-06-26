@@ -118,11 +118,11 @@ namespace osc {
   extern "C" int main(int ac, char **av)
   {
     try {
-      Model *model = loadOBJ(
+      Model *model = loadCityJSON(
 #ifdef _WIN32
       // on windows, visual studio creates _two_ levels of build dir
       // (x86/Release)
-      "../../models/sponza.obj"
+      "../../models/delft.city.json"
 #else
       // on linux, common practice is to have ONE level of build dir
       // (say, <project>/build/)...
@@ -170,14 +170,14 @@ namespace osc {
         renderer->render();
         std::vector<uint32_t> pixels(fbSize.x*fbSize.y);
         renderer->downloadPixels(pixels.data());
-        // const std::string fileName = "rendered_fisheye_" + std::to_string(i) + ".png";
-        // stbi_write_png(fileName.c_str(),fbSize.x,fbSize.y,4,
-        //                pixels.data(),fbSize.x*sizeof(uint32_t));
-        // std::cout << GDT_TERMINAL_GREEN
-        //     << std::endl
-        //     << "Image rendered, and saved to " << fileName << " ... done." << std::endl
-        //     << GDT_TERMINAL_DEFAULT
-        //     << std::endl;
+        const std::string fileName = "rendered_fisheye_" + std::to_string(i) + ".png";
+        stbi_write_png(fileName.c_str(),fbSize.x,fbSize.y,4,
+                       pixels.data(),fbSize.x*sizeof(uint32_t));
+        std::cout << GDT_TERMINAL_GREEN
+            << std::endl
+            << "Image rendered, and saved to " << fileName << " ... done." << std::endl
+            << GDT_TERMINAL_DEFAULT
+            << std::endl;
       }
 
       auto end = std::chrono::high_resolution_clock::now();

@@ -547,10 +547,7 @@ namespace osc {
     launchParams.camera.bitangent = normalize(cross(launchParams.camera.direction,
                                                     launchParams.camera.tangent)); 
 
-    std::cout<< "horizontal: " << launchParams.camera.horizontal << std::endl;
-    std::cout<< "vertical: " << launchParams.camera.vertical << std::endl;
-    std::cout<< "tangent: " << launchParams.camera.tangent << std::endl;
-    std::cout<< "bitangent: " << launchParams.camera.bitangent << std::endl;
+
 
   }
   

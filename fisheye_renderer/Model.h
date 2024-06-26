@@ -5,6 +5,9 @@
 #include <sstream>
 #include <fstream> 
 #include <tuple>
+#include "json.hpp"
+#include <unordered_set>
+using json = nlohmann::json;
 
 namespace osc {
     using namespace gdt;
@@ -13,12 +16,12 @@ namespace osc {
         std::vector<vec3f> vertex;
         std::vector<vec3f> normal;
         std::vector<vec3i> index;
-        std::vector<int> triangleID;
+        // std::vector<int> triangleID;
 
         std::vector<int> materialID;
         vec3f diffuse;
 
-        int buildingID;
+        // int buildingID;
 
     };
 
@@ -35,8 +38,11 @@ namespace osc {
         void transformModel();
     };
 
+    std::vector<vec3f> get_coordinates(const json& j, bool translate);
+
     Model *loadOBJ(const std::string &objFile);
 
+    Model *loadCityJSON(const std::string &jsonFile);
     
 
 }
