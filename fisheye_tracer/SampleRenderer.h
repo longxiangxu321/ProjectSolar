@@ -19,6 +19,7 @@
 // our own classes, partly shared between host and device
 #include "CUDABuffer.h"
 #include "LaunchParams.h"
+#include "sample_pointGrid.h"
 #include "Model.h"
 
 /*! \namespace osc - Optix Siggraph Course */
@@ -55,6 +56,8 @@ namespace osc {
 
     /*! download the rendered color buffer */
     void downloadPixels(uint32_t h_pixels[]);
+
+    KDTree kdTree;
 
     /*! set camera to render with */
     // void setCamera(const Camera &camera);
@@ -131,6 +134,8 @@ namespace osc {
     LaunchParams launchParams;
     CUDABuffer   launchParamsBuffer;
     /*! @} */
+    box3f bbox;
+    float resolution;
 
     CUDABuffer colorBuffer;
 

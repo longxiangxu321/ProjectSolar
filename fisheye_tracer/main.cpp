@@ -49,53 +49,72 @@ namespace osc {
                              );
 
       model->transformModel();
+      SampleRenderer *renderer = new SampleRenderer(model);
 
       std::vector<GridPoint> gridpoints= create_point_grid(*model);
       std::cout<<"Grid points created: "<< gridpoints.size()<<std::endl;
-    
-      SampleRenderer *renderer = new SampleRenderer(model);
+      KDTree kdTree;
+      kdTree.grid_size = gridpoints.size();
+      kdTree.kdtree = new GridPoint[gridpoints.size()];
+      kdTree.node_depth = new int[gridpoints.size()];
+      buildKDTree(gridpoints, kdTree.kdtree, kdTree.node_depth, 0, gridpoints.size()-1, 0, 0);
+
+      std::cout<<"KDTree built"<<std::endl;
+      renderer->kdTree = kdTree;
+
       const vec2i fbSize(vec2i(360,90));
 
       auto start = std::chrono::high_resolution_clock::now();
 
 
-      srand(static_cast<unsigned>(time(0)));
+      // srand(static_cast<unsigned>(time(0)));
 
-      const int numCameras = 100;
-      Camera cameras[numCameras];
+      
+      uint32_t num_samplepoints = gridpoints.size();
+      const uint32_t batch_size = 1000;
+      const uint32_t last_batch_size = num_samplepoints % batch_size;
+      uint32_t num_batches = num_samplepoints / batch_size;
+      vec2i spliting = vec2i(360, 90);
 
-    for (int i = 0; i < numCameras; ++i) {
-        vec3f randomPosition(
-            -1000 + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / (2000))),
-            -1000 + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / (2000))),
-            0 + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / (100)))
-        );
+      std::cout<<"Rendering with batch size "<<batch_size<<std::endl;
+      std::cout <<"Total number of batches: "<<num_batches<<std::endl;
+      for (uint32_t i = 0; i < num_batches - 1; i++) {
+        if (i % 10 == 0) {
+          std::cout<<"Rendering batch "<<i<<"to "<< i+10 <<std::endl;
+        }
+        
+        Camera cameras[batch_size];
 
-        vec3f direction = vec3f(0.f, -400.f, 0.f); // 目标位置
-        vec3f up = vec3f(0.f, 1.f, 0.f); // 上方向
-        vec3f horizontal, vertical, tangent, bitangent; // 根据需要计算这些向量
-        Camera cam= {randomPosition, direction, up};
-        cameras[i] = cam;
-    }
-    vec2i spliting = vec2i(360, 90);
-    renderer->setCameraGroup(cameras, numCameras, spliting);
-    renderer->render();
-    std::vector<uint32_t> pixels(numCameras*spliting.x*spliting.y);
-    renderer->downloadPixels(pixels.data());
+        std::vector<GridPoint> batch_points(gridpoints.begin() + i * batch_size, gridpoints.begin() + (i + 1) * batch_size);
+        for (uint32_t j = 0; j < batch_points.size(); j++) {
+          GridPoint point = batch_points[j];
+          vec3f position = point.position;
+          vec3f direction = point.normal;
+          vec3f up = vec3f(0.f, 1.f, 0.f);
+          Camera cam = {position, position + direction, up};
+          cameras[j] = cam;
+        }
+        renderer->setCameraGroup(cameras, batch_size, spliting);
+        renderer->render();
+      }
 
-      // std::vector<vec3f> lookfroms = {vec3f(-10.07f, 20.681f, 20), vec3f(0, 0, 20), vec3f(300, 100, 10), vec3f(200, -50, 15)};
+      std::cout<<"Rendering last batch of "<<last_batch_size<<std::endl;
+      
+      Camera* last_cameras = new Camera[last_batch_size];
+      std::vector<GridPoint> last_batch_points(gridpoints.begin() + num_batches * batch_size, gridpoints.end());
+      for (uint32_t j = 0; j < last_batch_points.size(); j++) {
+        GridPoint point = last_batch_points[j];
+        vec3f position = point.position;
+        vec3f direction = point.normal;
+        vec3f up = vec3f(0.f, 1.f, 0.f);
+        Camera cam = {position, position + direction, up};
+        last_cameras[j] = cam;
+      }
+      renderer->setCameraGroup(last_cameras, last_batch_size, spliting);
+      renderer->render();
+      delete[] last_cameras;
+      
 
-
-      // for (int i = 0; i < lookfroms.size(); i++) {
-        // Camera camera = { /*from*/lookfroms[i],
-        //                   /* at */model->bounds.center()-vec3f(0,400,0),
-        //                   /* up */vec3f(0.f,1.f,0.f) };
-      //   renderer->resize(fbSize);
-      //   renderer->setCamera(camera);
-      //   renderer->render();
-      //   std::vector<uint32_t> pixels(fbSize.x*fbSize.y);
-      //   renderer->downloadPixels(pixels.data());
-      // }
 
       auto end = std::chrono::high_resolution_clock::now();
 

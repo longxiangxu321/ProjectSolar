@@ -64,6 +64,95 @@ void calculate_mass_center(const vec3f &A, const vec3f &B, const vec3f &C, const
 }
 
 
+
+
+inline bool xcompare(GridPoint a, GridPoint b) { return a.position.x < b.position.x; }
+inline bool ycompare(GridPoint a, GridPoint b) { return a.position.y < b.position.y; }
+inline bool zcompare(GridPoint a, GridPoint b) { return a.position.z < b.position.z; }
+
+void buildKDTree(std::vector<GridPoint> &grid, GridPoint* kdtree, int* depth_list, 
+    uint32_t start, uint32_t end, uint32_t current_node, int current_depth) {
+    if (start >= end || current_node >= grid.size()) {
+        return;
+    }
+    
+
+    int axis = current_depth % 3;
+    auto comparator = (axis == 0) ? xcompare : (axis == 1) ? ycompare : zcompare;
+    int mid = (start + end) / 2;
+    std::nth_element(grid.begin() + start, grid.begin() + mid, grid.begin() + end, comparator);
+
+    kdtree[current_node] = grid[mid];
+    depth_list[current_node] = current_depth;
+    
+    buildKDTree(grid, kdtree, depth_list, start, mid, 2*current_node+1, current_depth + 1);
+    buildKDTree(grid, kdtree, depth_list, mid+1, end, 2*current_node+2, current_depth + 1);
+}
+
+
+KNNResult findKNN(const KDTree &kdTree, const int K, float radius, const GridPoint &target) {
+
+    std::vector<uint32_t> stack;
+    stack.push_back(0);
+
+    uint32_t* indices = new uint32_t[K];
+    std::fill(indices, indices + K, std::numeric_limits<uint32_t>::max());
+
+    float* distances = new float[K];
+    std::fill(distances, distances + K, std::numeric_limits<float>::max());
+
+	
+
+	while(!stack.empty()) {
+		int node_idx = stack.back();
+        stack.pop_back();
+
+        if (node_idx >= kdTree.grid_size) continue;
+
+		const GridPoint& node = kdTree.kdtree[node_idx];
+        float dist = calculate_dist(node.position, target.position);
+		
+		if (dist < radius){
+			for (int i = 0; i<K; ++i) {
+				if(dist < distances[i]) {
+					for (int j=K-1; j>i;--j) { //所有后续元素后移
+						distances[j] = distances[j-1];
+						indices[j] = indices[j-1];
+					}
+					distances[i]=dist;
+					indices[i]=node_idx;
+					break;
+				}
+			}
+		}
+		
+		int axis = kdTree.node_depth[node_idx];
+		float diff;
+		
+        if (axis == 0) diff = target.position.x - node.position.x;
+        else if (axis == 1) diff = target.position.y - node.position.y;
+        else diff = target.position.z - node.position.z;
+		
+        uint32_t near_child = (diff < 0) ? 2 * node_idx + 1 : 2 * node_idx + 2;
+        uint32_t far_child = (diff < 0) ? 2 * node_idx + 2 : 2 * node_idx + 1;
+		
+		if (near_child < kdTree.grid_size) stack.push_back(near_child);
+		
+        if (fabsf(diff) < radius && far_child < kdTree.grid_size) {
+            stack.push_back(far_child);
+        }
+				
+	}
+
+    KNNResult result;
+    result.K = K;
+    result.indices = indices;
+    result.distances = distances;
+    return result;
+
+}
+
+
 std::vector<GridPoint> create_point_grid(const Model& citymodel) {
    std::string output_file = "../grid.xyz";
     // std::string output_file = CFG["shadow_calc"]["pointgrid_path"];

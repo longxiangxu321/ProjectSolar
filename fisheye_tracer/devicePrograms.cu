@@ -82,10 +82,14 @@ namespace osc {
     const vec3f &C     = sbtData.vertex[index.z];
     const vec3f Ng     = normalize(cross(B-A,C-A));
 
+    // int testN = optixLaunchParams.kdTree->grid_size;
+
     const vec3f rayDir = optixGetWorldRayDirection();
-    const float cosDN  = 0.2f + .8f*fabsf(dot(rayDir,Ng));
-    vec3f &prd = *(vec3f*)getPRD<vec3f>();
-    prd = cosDN * sbtData.color;
+    // const float cosDN  = 0.2f + .8f*fabsf(dot(rayDir,Ng));
+    // vec3f &prd = *(vec3f*)getPRD<vec3f>();
+    // prd = cosDN * sbtData.color;
+    const float cosDN  = fabsf(dot(rayDir,Ng));
+    
   }
   
   extern "C" __global__ void __anyhit__radiance()

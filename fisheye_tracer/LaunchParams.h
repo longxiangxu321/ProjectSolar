@@ -17,6 +17,7 @@
 #pragma once
 
 #include "gdt/math/vec.h"
+#include "sample_pointGrid.h"
 #include "optix7.h"
 
 namespace osc {
@@ -42,16 +43,32 @@ namespace osc {
     
 
 
-    int n_elevation;
-    int n_azimuth;
+    uint32_t n_elevation;
+    uint32_t n_azimuth;
 
     vec3f* positions;
     vec3f* directions;
     vec3f* tangents;
     vec3f* bitangents;
-    int n_cameras;
+    uint32_t n_cameras;
+
+    vec3f bbox_min;
+    vec3f bbox_max;
+    float resolution; // voxel grid resolution
+
+    KDTree* kdTree;
 
     OptixTraversableHandle traversable;
+
+    // void free_temp() {
+    //   free(positions);
+    //   free(directions);
+    //   free(tangents);
+    //   free(bitangents);
+    //   free(colorBuffer);
+    //   free(kdTree.kdtree);
+    //   free(kdTree.node_depth);
+    // }
   };
 
 } // ::osc

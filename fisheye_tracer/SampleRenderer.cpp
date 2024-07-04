@@ -55,6 +55,9 @@ namespace osc {
   SampleRenderer::SampleRenderer(const Model *model)
     : model(model)
   {
+    bbox = model->bounds;
+    resolution = 1; // 1 meter
+
     initOptix();
       
     std::cout << "#osc: creating optix context ..." << std::endl;
@@ -502,12 +505,17 @@ namespace osc {
     // sanity check: make sure we launch only after first resize is
     // already done:
     // if (launchParams.frame.size.x == 0) return;
+    launchParamsBuffer.free();
+
+    CUDABuffer launchParamsBuffer;
     launchParamsBuffer.alloc(sizeof(launchParams));
+
+
     launchParamsBuffer.upload(&launchParams,1);
+
       
     int fmsize = launchParams.n_azimuth * launchParams.n_elevation;
-    std::cout << "fmsize: " << fmsize << std::endl;
-    std::cout << "n_cameras: " << launchParams.n_cameras << std::endl;
+    
     OPTIX_CHECK(optixLaunch(
                             pipeline,stream,
                             /*! parameters and SBT */
@@ -519,6 +527,7 @@ namespace osc {
                             fmsize,
                             1
                             ));
+
     // sync - make sure the frame is rendered before we download and
     // display (obviously, for a high-performance application you
     // want to use streams and double-buffering, but for this simple
@@ -530,13 +539,12 @@ namespace osc {
   void SampleRenderer::setCameraGroup(const Camera* cameras, const int numCameras, const vec2i &spliting)
   {
 
-    // launchParams.cameras = new osc::Camera_info[numCameras];
+
 
     vec3f* h_positions = new vec3f[numCameras];
     vec3f* h_directions = new vec3f[numCameras];
     vec3f* h_tangents = new vec3f[numCameras];
     vec3f* h_bitangents = new vec3f[numCameras];
-    std::cout<<"numCameras: "<<numCameras<<std::endl;
 
     for (int i = 0; i < numCameras; i++) {
       vec3f origin = cameras[i].from;
@@ -576,11 +584,37 @@ namespace osc {
     cudaMemcpy(d_tangents, h_tangents, numCameras * sizeof(vec3f), cudaMemcpyHostToDevice);
     cudaMemcpy(d_bitangents, h_bitangents, numCameras * sizeof(vec3f), cudaMemcpyHostToDevice);
 
+
+  
+    KDTree* d_kdtree;
+    cudaMalloc(&d_kdtree, sizeof(KDTree));
+
+    // 2. 分配和复制kdtree指针指向的数据
+    GridPoint* d_kdtree_data;
+    cudaMalloc(&d_kdtree_data, kdTree.grid_size * sizeof(GridPoint));
+    cudaMemcpy(d_kdtree_data, kdTree.kdtree, kdTree.grid_size * sizeof(GridPoint), cudaMemcpyHostToDevice);
+
+    // 3. 分配和复制node_depth指针指向的数据
+    int* d_node_depth;
+    cudaMalloc(&d_node_depth, kdTree.grid_size * sizeof(int));
+    cudaMemcpy(d_node_depth, kdTree.node_depth, kdTree.grid_size * sizeof(int), cudaMemcpyHostToDevice);
+
+    // 4. 更新设备上的KDTree结构体中的指针
+    KDTree host_kdtree_copy = kdTree;
+    host_kdtree_copy.kdtree = d_kdtree_data;
+    host_kdtree_copy.node_depth = d_node_depth;
+    cudaMemcpy(d_kdtree, &host_kdtree_copy, sizeof(KDTree), cudaMemcpyHostToDevice);
+
     // Update the device pointers in launchParams
     launchParams.positions = d_positions;
     launchParams.directions = d_directions;
     launchParams.tangents = d_tangents;
     launchParams.bitangents = d_bitangents;
+
+    launchParams.kdTree = d_kdtree;
+
+
+
 
     delete[] h_positions;
     delete[] h_directions;
@@ -590,19 +624,13 @@ namespace osc {
     launchParams.n_cameras = numCameras;
     launchParams.n_azimuth = spliting.x;
     launchParams.n_elevation = spliting.y;
+    launchParams.bbox_min = bbox.lower;
+    launchParams.bbox_max = bbox.upper;
+    launchParams.resolution = resolution;
 
     colorBuffer.resize(numCameras * spliting.x * spliting.y * sizeof(uint32_t));
+    // std::cout << "color Buffer " << (colorBuffer.d_pointer()==0) << std::endl;
     launchParams.colorBuffer = (uint32_t*)colorBuffer.d_pointer();
-
-    // vec3f test_origin = launchParams.cameras[1].position;
-    // vec3f test_direction = launchParams.cameras[1].direction;
-    // vec3f test_tangent = launchParams.cameras[1].tangent;
-    // vec3f test_bitangent = launchParams.cameras[1].bitangent;
-    // std::cout<<"color buufer size: "<<numCameras * spliting.x * spliting.y * sizeof(uint32_t)<<std::endl;
-    // std::cout<<"origin: "<<test_origin.x<<" "<<test_origin.y<<" "<<test_origin.z<<std::endl;
-    // std::cout<<"direction: "<<test_direction.x<<" "<<test_direction.y<<" "<<test_direction.z<<std::endl;
-    // std::cout<<"tangent: "<<test_tangent.x<<" "<<test_tangent.y<<" "<<test_tangent.z<<std::endl;
-    // std::cout<<"bitangent: "<<test_bitangent.x<<" "<<test_bitangent.y<<" "<<test_bitangent.z<<std::endl;
   }
   
 
