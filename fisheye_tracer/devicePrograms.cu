@@ -29,6 +29,77 @@ namespace osc {
 
   // for this simple example, we have a single ray type
   enum { SURFACE_RAY_TYPE=0, RAY_TYPE_COUNT };
+
+  float static __forceinline__ __device__ calculate_dist(const vec3f &a, const vec3f &b) {
+    return sqrtf((a.x - b.x) * (a.x - b.x) +
+                 (a.y - b.y) * (a.y - b.y) +
+                 (a.z - b.z) * (a.z - b.z));
+  }
+
+
+  uint32_t static __device__ findKNN(const KDTree &kdTree, const int K, float radius, const vec3f &target)
+  {
+
+
+    uint32_t* indices = new uint32_t[K];
+    for (int i = 0; i < K; ++i) {
+        indices[i] = UINT32_MAX;
+    }
+
+    float* distances = new float[K];
+    for (int i = 0; i < K; ++i) {
+        distances[i] = FLT_MAX;
+    }
+
+    uint32_t stack[64];
+  int stack_size = 0;
+  stack[stack_size++] = 0;
+
+	  while(stack_size > 0) {
+		  int node_idx = stack[--stack_size];
+
+      if (node_idx >= kdTree.grid_size) continue;
+
+		const GridPoint& node = kdTree.kdtree[node_idx];
+        float dist = calculate_dist(node.position, target);
+		
+		if (dist < radius){
+			for (int i = 0; i<K; ++i) {
+				if(dist < distances[i]) {
+					for (int j=K-1; j>i;--j) { //所有后续元素后移
+						distances[j] = distances[j-1];
+						indices[j] = indices[j-1];
+					}
+					distances[i]=dist;
+					indices[i]=node_idx;
+					break;
+				}
+			}
+		}
+		
+		int axis = kdTree.node_depth[node_idx];
+		float diff;
+		
+        if (axis == 0) diff = target.x - node.position.x;
+        else if (axis == 1) diff = target.y - node.position.y;
+        else diff = target.z - node.position.z;
+		
+        uint32_t near_child = (diff < 0) ? 2 * node_idx + 1 : 2 * node_idx + 2;
+        uint32_t far_child = (diff < 0) ? 2 * node_idx + 2 : 2 * node_idx + 1;
+		
+		if (near_child < kdTree.grid_size) stack[stack_size++] = near_child;
+		
+        if (fabsf(diff) < radius && far_child < kdTree.grid_size) {
+            stack[stack_size++] = far_child;
+        }
+				
+	}
+
+    // KNNResult result{1, indices, distances};
+    return indices[0];
+  }
+
+
   
   static __forceinline__ __device__
   void *unpackPointer( uint32_t i0, uint32_t i1 )
@@ -82,13 +153,20 @@ namespace osc {
     const vec3f &C     = sbtData.vertex[index.z];
     const vec3f Ng     = normalize(cross(B-A,C-A));
 
+    float2 hit_barycentric = optixGetTriangleBarycentrics();
+    vec3f hit_point = A * (1.0f - hit_barycentric.x - hit_barycentric.y) +
+                      B * hit_barycentric.x +
+                      C * hit_barycentric.y;
     // int testN = optixLaunchParams.kdTree->grid_size;
 
     const vec3f rayDir = optixGetWorldRayDirection();
     // const float cosDN  = 0.2f + .8f*fabsf(dot(rayDir,Ng));
-    // vec3f &prd = *(vec3f*)getPRD<vec3f>();
+    vec3f &prd = *(vec3f*)getPRD<vec3f>();
     // prd = cosDN * sbtData.color;
     const float cosDN  = fabsf(dot(rayDir,Ng));
+    uint32_t result = findKNN(*optixLaunchParams.kdTree, 1, 3, hit_point);
+    float dist = calculate_dist(hit_point, optixLaunchParams.positions[0]);
+    prd = vec3f(0.f);
     
   }
   

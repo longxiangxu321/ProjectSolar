@@ -132,7 +132,7 @@ namespace osc {
       // Camera camera = { /*from*/vec3f(-10.07f, 20.681f, -2.7304f),
       //                   /* at */model->bounds.center()-vec3f(0,400,0),
       //                   /* up */vec3f(0.f,1.f,0.f) };
-      model->transformModel();
+      //model->transformModel();
 
       // vec3f lookfrom = model->bounds.center() + vec3f(0, 0, 500);
       // vec3f lookat = model->bounds.center();
@@ -160,10 +160,14 @@ namespace osc {
       const vec2i fbSize(vec2i(360,90));
 
       auto start = std::chrono::high_resolution_clock::now();
-      std::vector<vec3f> lookfroms = {vec3f(-10.07f, 20.681f, 20), vec3f(0, 0, 20), vec3f(300, 100, 10), vec3f(200, -50, 15)};
+
+      vec3f normal = vec3f(0.651358,0.758770,0.001377);
+      vec3f lookfrom = vec3f(85149.64585876,446853.46130371,10.28766632);
+      std::cout << "looking from: "<< lookfrom << std::endl;
+      std::vector<vec3f> lookfroms = {lookfrom};
       for (int i = 0; i < lookfroms.size(); i++) {
         Camera camera = { /*from*/lookfroms[i],
-                          /* at */model->bounds.center()-vec3f(0,400,0),
+                          /* at */vec3f(0.527859,0.615555,0.585198),
                           /* up */vec3f(0.f,1.f,0.f) };
         renderer->resize(fbSize);
         renderer->setCamera(camera);
