@@ -58,6 +58,7 @@ namespace osc {
     float resolution; // voxel grid resolution
     int3 voxel_dim; // voxel grid size
 
+    vec2i hemisphere_resolution;
 
 
     OptixTraversableHandle traversable;

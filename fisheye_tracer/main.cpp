@@ -72,7 +72,9 @@ namespace osc {
       const uint32_t batch_size = 2500;
       const uint32_t last_batch_size = num_samplepoints % batch_size;
       uint32_t num_batches = num_samplepoints / batch_size;
-      vec2i spliting = vec2i(360, 90);
+      vec2i hemisphere_resolution = vec2i(1,1);
+      
+      // vec2i spliting = vec2i(360, 90);
 
       std::cout<<"Rendering with batch size "<<batch_size<<std::endl;
       std::cout <<"Total number of batches: "<<num_batches<<std::endl;
@@ -92,7 +94,7 @@ namespace osc {
           Camera cam = {position, position + direction, up};
           cameras[j] = cam;
         }
-        renderer->setCameraGroup(cameras, batch_size, spliting);
+        renderer->setCameraGroup(cameras, batch_size, hemisphere_resolution);
         renderer->render();
         std::vector<uint32_t> pixels(batch_size*fbSize.x*fbSize.y);
         std::vector<float> pixels_float(batch_size*fbSize.x*fbSize.y*3);
@@ -117,7 +119,7 @@ namespace osc {
         Camera cam = {position, position + direction, up};
         last_cameras[j] = cam;
       }
-      renderer->setCameraGroup(last_cameras, last_batch_size, spliting);
+      renderer->setCameraGroup(last_cameras, last_batch_size, hemisphere_resolution);
       renderer->render();
       delete[] last_cameras;
       

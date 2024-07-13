@@ -154,8 +154,8 @@ namespace osc {
     // int iy = ray_id / 360;
 
 
-    float theta = degrees_to_radians(float(ix));
-    float phi = degrees_to_radians(float(iy)) / 2.0f;
+    float theta = degrees_to_radians(float(ix) * optixLaunchParams.hemisphere_resolution.x);
+    float phi = degrees_to_radians(float(iy) * optixLaunchParams.hemisphere_resolution.y) * 0.5f;
     // float theta = screen.x * 2.0f * M_PI;  // 从 0 到 2*PI
     // float phi = screen.y * 0.5f * M_PI;           // 从 0 到 PI
 

@@ -536,11 +536,11 @@ namespace osc {
   }
 
   /*! set camera to render with */
-  void SampleRenderer::setCameraGroup(const Camera* cameras, const int numCameras, const vec2i &spliting)
+  void SampleRenderer::setCameraGroup(const Camera* cameras, const int numCameras, const vec2i &hemisphere_resolution)
   {
 
-
-
+    vec2i spliting = vec2i(360/hemisphere_resolution.x, 90/hemisphere_resolution.y);
+    
     vec3f* h_positions = new vec3f[numCameras];
     vec3f* h_directions = new vec3f[numCameras];
     vec3f* h_tangents = new vec3f[numCameras];
@@ -608,6 +608,7 @@ namespace osc {
     launchParams.bbox_min = bbox.lower;
     launchParams.bbox_max = bbox.upper;
     launchParams.resolution = resolution;
+    launchParams.hemisphere_resolution = hemisphere_resolution;
     launchParams.voxel_dim = make_int3(ceil((bbox.upper.x - bbox.lower.x) / resolution),
                                              ceil((bbox.upper.y - bbox.lower.y) / resolution),
                                              ceil((bbox.upper.z - bbox.lower.z) / resolution));
