@@ -61,9 +61,11 @@ namespace osc {
 
       // srand(static_cast<unsigned>(time(0)));
 
-      std::ofstream outFile("../semantic_map.dat", std::ios::binary | std::ios::out);
-      if (!outFile) {
-        std::cerr << "无法打开文件进行写操作" << std::endl;
+      std::ofstream indexFile("../index_map.dat", std::ios::binary | std::ios::out);
+      std::ofstream angleFile("../angle_map.dat", std::ios::binary | std::ios::out);
+
+      if (!indexFile || !angleFile) {
+        std::cerr << "cannot create semantic_map" << std::endl;
         return 1;
       }
 
@@ -80,7 +82,7 @@ namespace osc {
       std::cout <<"Total number of batches: "<<num_batches<<std::endl;
       for (uint32_t i = 0; i < num_batches - 1; i++) {
         if (i % 10 == 0) {
-          std::cout<<"Rendering batch "<<i<<"to "<< i+10 <<std::endl;
+          std::cout<<GDT_TERMINAL_GREEN<<"Rendering batch "<<i<<" to "<< i+10 <<std::endl;
         }
         
         Camera cameras[batch_size];
@@ -101,13 +103,13 @@ namespace osc {
         renderer->downloadPixels(pixels.data());
         renderer->downloadIncidentAngles(pixels_float.data());
 
-        outFile.write(reinterpret_cast<const char*>(pixels.data()), pixels.size() * sizeof(uint32_t));
-        outFile.write(reinterpret_cast<const char*>(pixels_float.data()), pixels_float.size() * sizeof(float));
+        indexFile.write(reinterpret_cast<const char*>(pixels.data()), pixels.size() * sizeof(uint32_t));
+        angleFile.write(reinterpret_cast<const char*>(pixels_float.data()), pixels_float.size() * sizeof(float));
 
       }
-      outFile.close();
+      
 
-      std::cout<<"Rendering last batch of "<<last_batch_size<<std::endl;
+      std::cout<<GDT_TERMINAL_GREEN<<"Rendering last batch with size: "<<last_batch_size<<GDT_TERMINAL_DEFAULT<<std::endl;
       
       Camera* last_cameras = new Camera[last_batch_size];
       std::vector<GridPoint> last_batch_points(gridpoints.begin() + num_batches * batch_size, gridpoints.end());
@@ -121,6 +123,20 @@ namespace osc {
       }
       renderer->setCameraGroup(last_cameras, last_batch_size, hemisphere_resolution);
       renderer->render();
+
+      std::vector<uint32_t> pixels(batch_size*fbSize.x*fbSize.y);
+      std::vector<float> pixels_float(batch_size*fbSize.x*fbSize.y*3);
+      renderer->downloadPixels(pixels.data());
+      renderer->downloadIncidentAngles(pixels_float.data());
+
+      indexFile.write(reinterpret_cast<const char*>(pixels.data()), pixels.size() * sizeof(uint32_t));
+      angleFile.write(reinterpret_cast<const char*>(pixels_float.data()), pixels_float.size() * sizeof(float));
+
+      indexFile.close();
+      angleFile.close();
+
+      std::cout<<"Finito"<<std::endl;
+
       delete[] last_cameras;
       
 
