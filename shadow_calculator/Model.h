@@ -18,7 +18,8 @@ namespace osc {
         std::vector<vec3i> index;
         // std::vector<int> triangleID;
 
-        std::vector<int> materialID;
+        std::vector<int> globalID;
+        std::vector<int> surfaceType;
         vec3f diffuse;
 
         // int buildingID;

@@ -53,6 +53,8 @@ namespace osc {
 
       std::vector<GridPoint> gridpoints= create_point_grid(*model);
       std::cout<<"Grid points created: "<< gridpoints.size()<<std::endl;
+      save_point_grid(gridpoints, "../grid_points.dat");
+      std::cout<<"Grid points saved"<<std::endl;
 
       const vec2i fbSize(vec2i(360,90));
 
@@ -91,7 +93,7 @@ namespace osc {
         for (uint32_t j = 0; j < batch_points.size(); j++) {
           GridPoint point = batch_points[j];
           vec3f position = point.position;
-          vec3f direction = point.normal;
+          vec3f direction = point.triangle_info.direction;
           vec3f up = vec3f(0.f, 1.f, 0.f);
           Camera cam = {position, position + direction, up};
           cameras[j] = cam;
@@ -116,7 +118,7 @@ namespace osc {
       for (uint32_t j = 0; j < last_batch_points.size(); j++) {
         GridPoint point = last_batch_points[j];
         vec3f position = point.position;
-        vec3f direction = point.normal;
+        vec3f direction = point.triangle_info.direction;
         vec3f up = vec3f(0.f, 1.f, 0.f);
         Camera cam = {position, position + direction, up};
         last_cameras[j] = cam;

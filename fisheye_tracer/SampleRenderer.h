@@ -58,7 +58,6 @@ namespace osc {
     void downloadPixels(uint32_t h_pixels[]);
     void SampleRenderer::downloadIncidentAngles(float h_incident_angles[]);
 
-    KDTree kdTree;
 
     /*! set camera to render with */
     // void setCamera(const Camera &camera);

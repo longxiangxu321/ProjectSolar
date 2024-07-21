@@ -3,6 +3,17 @@
 
 namespace osc {
 
+    std::map<std::string, int> createSurfaceTypeMap() {
+    std::map<std::string, int> surface_type_map;
+    surface_type_map["WallSurface"] = 0;
+    surface_type_map["RoofSurface"] = 1;
+    surface_type_map["GroundSurface"] = 2;
+    return surface_type_map;
+    }
+
+    std::map<std::string, int> surface_type_map = createSurfaceTypeMap();
+
+
     // std::tuple<int, int> global local
     int addOrGetVertexIndex(std::map<int, int>& vertexMap, int globalIndex) {
       auto it = vertexMap.find(globalIndex);
@@ -108,7 +119,8 @@ namespace osc {
 
                 vec3f normal = normalize(cross(x1 - x0, x2 - x0));
                 mesh->normal.push_back(normal);
-                mesh->materialID.push_back(matID);
+                mesh->globalID.push_back(total_triangles);
+                mesh->surfaceType.push_back(matID);
                 total_triangles++;
             }
             else {
@@ -234,7 +246,10 @@ namespace osc {
                                 vec3f vz = lspts[global_v2];
                                 vec3f normal = normalize(cross(vy - vx, vz - vx));
                                 mesh->normal.push_back(normal);
-                                mesh->materialID.push_back(gmlid_int);
+                                mesh->globalID.push_back(gmlid_int);
+                                std::string type = g["semantics"]["surfaces"][i]["type"];
+                                int surface_type_id = surface_type_map[type];
+                                mesh->surfaceType.push_back(surface_type_id);
                                 total_triangles++;
                         }
   
@@ -247,7 +262,7 @@ namespace osc {
                 
                 assert(mesh->vertex.size() == vertexMap.size());
                 assert(mesh->index.size() == mesh->normal.size());
-                assert(mesh->index.size() == mesh->materialID.size());
+                assert(mesh->index.size() == mesh->globalID.size());
 
                 
                 if (mesh->vertex.size() > 0 && mesh->index.size() > 0){

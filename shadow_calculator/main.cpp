@@ -51,7 +51,11 @@ namespace osc {
       model->transformModel();
       SampleRenderer *renderer = new SampleRenderer(model);
 
+      float sampling_density = 16;
+      // std::filesystem::path output_path = "../grid.xyz";
+
       std::vector<GridPoint> gridpoints= create_point_grid(*model);
+
       std::cout<<"Grid points created: "<< gridpoints.size()<<std::endl;
 
       auto start = std::chrono::high_resolution_clock::now();
@@ -93,7 +97,7 @@ namespace osc {
         for (uint32_t j = 0; j < batch_points.size(); j++) {
           GridPoint point = batch_points[j];
           vec3f position = point.position;
-          vec3f direction = point.normal;
+          vec3f direction = point.triangle_info.direction;
           Camera cam = {position, direction};
           cameras[j] = cam;
         }
@@ -114,7 +118,7 @@ namespace osc {
       for (uint32_t j = 0; j < last_batch_points.size(); j++) {
         GridPoint point = last_batch_points[j];
         vec3f position = point.position;
-        vec3f direction = point.normal;
+        vec3f direction = point.triangle_info.direction;
         Camera cam = {position, direction};
         last_cameras[j] = cam;
       }

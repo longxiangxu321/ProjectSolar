@@ -13,55 +13,41 @@
 using json = nlohmann::json;
 
 namespace osc {
+
+    struct Triangle_info {
+        vec3f direction;
+        uint32_t surf_gmlid;
+        int surface_type;
+    };
+
+
+
     struct GridPoint {
     vec3f position;
-    vec3f normal;
-    uint32_t surf_gmlid;
+    Triangle_info triangle_info;
     // std::vector<vec3> hemisphere_samples;
 
     GridPoint() = default;
-    GridPoint(const vec3f ori, const vec3f dir): position(ori), normal(dir) {}
-
-    GridPoint copy() {
-        GridPoint gp;
-        gp.position = position;
-        gp.normal = normal;
-        gp.surf_gmlid = surf_gmlid;
-        return gp;
-    }
-
+    GridPoint(const vec3f ori, const Triangle_info info): position(ori), triangle_info(info) {}
     };
 
 
 
 
-    void calculate_mass_center(const vec3f &A, const vec3f &B, const vec3f &C, const vec3f &direction, const int splits,
-                            std::stringstream &output_stream, std::vector<GridPoint> &grid_n, const int &current_depth,
-                            const int &max_depth, const uint32_t surf_gmlid);
 
-    struct KDTree
-    {
-        GridPoint* kdtree;
-        int* node_depth;
-        int grid_size;
-    };
 
-    struct KNNResult
-    {
-        int K;
-        uint32_t* indices;
-        float* distances;
-    };
+    void calculate_mass_center(const vec3f &A, const vec3f &B, const vec3f &C, const int splits,std::vector<GridPoint> &grid_n, const int &current_depth,
+                            const int &max_depth, const Triangle_info triangle_info);
 
-    void buildKDTree(std::vector<GridPoint> &grid, GridPoint* kdtree, int* depth_list, uint32_t start, uint32_t end, uint32_t current_node, int depth);
 
-    KNNResult findKNN(const KDTree &kdTree, const int K, float radius, const GridPoint &target);
 
     std::vector<GridPoint> create_point_grid(const Model& citymodel);
 
     float inline calculate_dist(vec3f a, vec3f b) {
         return sqrt(pow(a.x - b.x, 2) + pow(a.y - b.y, 2) + pow(a.z - b.z, 2));
     }
+
+    void save_point_grid(const std::vector<GridPoint> &grid_n, const std::string &filename);
 
 
     
