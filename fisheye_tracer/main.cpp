@@ -101,7 +101,8 @@ namespace osc {
         renderer->setCameraGroup(cameras, batch_size, hemisphere_resolution);
         renderer->render();
         std::vector<uint32_t> pixels(batch_size*fbSize.x*fbSize.y);
-        std::vector<float> pixels_float(batch_size*fbSize.x*fbSize.y*3);
+        std::vector<float> pixels_float(batch_size*fbSize.x*fbSize.y);
+
         renderer->downloadPixels(pixels.data());
         renderer->downloadIncidentAngles(pixels_float.data());
 
@@ -127,7 +128,7 @@ namespace osc {
       renderer->render();
 
       std::vector<uint32_t> pixels(batch_size*fbSize.x*fbSize.y);
-      std::vector<float> pixels_float(batch_size*fbSize.x*fbSize.y*3);
+      std::vector<float> pixels_float(batch_size*fbSize.x*fbSize.y);
       renderer->downloadPixels(pixels.data());
       renderer->downloadIncidentAngles(pixels_float.data());
 

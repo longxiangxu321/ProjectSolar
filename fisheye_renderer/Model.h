@@ -33,7 +33,7 @@ namespace osc {
 
         std::vector<TriangleMesh *> meshes;
         vec3f original_center;
-        box3f bounds;
+        box3f bounds;  // lower, upper
 
         void transformModel();
     };

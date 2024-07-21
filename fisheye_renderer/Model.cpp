@@ -24,7 +24,7 @@ namespace osc {
                                         mesh->vertex[i].y - bounds.center().y, mesh->vertex[i].z - bounds.center().z);
             }
         }
-        bounds = box3f(bounds.upper - bounds.center(), bounds.lower - bounds.center());
+        bounds = box3f(bounds.lower - bounds.center(), bounds.upper - bounds.center());
         
     }
 

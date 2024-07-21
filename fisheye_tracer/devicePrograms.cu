@@ -18,6 +18,8 @@
 
 #include "LaunchParams.h"
 
+#define UINT32_MAX_VALUE 4294967295U
+
 using namespace osc;
 
 namespace osc {
@@ -90,7 +92,7 @@ namespace osc {
 
     const vec3f rayDir = optixGetWorldRayDirection();
 
-    const float cosDN  = fabsf(dot(rayDir,Ng));
+    const float cosDN  = fabsf(dot(normalize(rayDir),Ng));
 
     float2 hit_barycentric = optixGetTriangleBarycentrics();
     vec3f hit_point = A * (1.0f - hit_barycentric.x - hit_barycentric.y) +
@@ -131,8 +133,8 @@ namespace osc {
     // prd = vec3f(1.f);
     PRD &prd = *(PRD*)getPRD<PRD>();
     
-    prd.cosDN = 0.0f;
-    prd.voxel_id = 0;
+    prd.cosDN = 1.1f;
+    prd.voxel_id = UINT32_MAX_VALUE;
 
   }
 
@@ -168,11 +170,6 @@ namespace osc {
     vec3f camera_direction = optixLaunchParams.directions[cam_id];
     vec3f tangent = optixLaunchParams.tangents[cam_id];
     vec3f bitangent = optixLaunchParams.bitangents[cam_id];
-
-    // vec3f camera_position = {0.0f, 0.0f, 0.0f};
-    // vec3f camera_direction = {0.0f, 0.0f, 1.0f};
-    // vec3f tangent = {1.0f, 0.0f, 0.0f};
-    // vec3f bitangent = {0.0f, 1.0f, 0.0f};
 
     // 计算并归一化射线方向
     vec3f rayDir = normalize(x * tangent + y * bitangent + z * camera_direction);

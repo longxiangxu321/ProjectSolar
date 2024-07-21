@@ -613,6 +613,12 @@ namespace osc {
                                              ceil((bbox.upper.y - bbox.lower.y) / resolution),
                                              ceil((bbox.upper.z - bbox.lower.z) / resolution));
 
+    // std::cout<<"bbox_min: "<<launchParams.bbox_min<<std::endl;
+    // std::cout<<"bbox_max: "<<launchParams.bbox_max<<std::endl;
+    // // std::cout<<"voxel_dim: "<<launchParams.voxel_dim<<std::endl;
+    // std::cout<<launchParams.voxel_dim.x<<" "
+    //   <<launchParams.voxel_dim.y<<" "<<launchParams.voxel_dim.z<<std::endl;
+
     colorBuffer.resize(numCameras * spliting.x * spliting.y * sizeof(uint32_t));
     incident_angleBuffer.resize(numCameras * spliting.x * spliting.y * sizeof(float));
     // std::cout << "color Buffer " << (colorBuffer.d_pointer()==0) << std::endl;
@@ -632,6 +638,15 @@ namespace osc {
   {
     incident_angleBuffer.download(h_incident_angles,
                                   launchParams.n_cameras*launchParams.n_azimuth*launchParams.n_elevation);
+  }
+
+  void SampleRenderer::print_dimension()
+  {
+    std::cout<<"bbox_min: "<<launchParams.bbox_min<<std::endl;
+    std::cout<<"bbox_max: "<<launchParams.bbox_max<<std::endl;
+    std::cout<<"voxel_dim x: "<<launchParams.voxel_dim.x<<std::endl;
+    std::cout<<"voxel_dim y: "<<launchParams.voxel_dim.y<<std::endl;
+    std::cout<<"voxel_dim z: "<<launchParams.voxel_dim.z<<std::endl;
   }
   
 } // ::osc

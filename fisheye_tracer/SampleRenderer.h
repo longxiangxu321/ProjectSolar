@@ -56,12 +56,16 @@ namespace osc {
 
     /*! download the rendered color buffer */
     void downloadPixels(uint32_t h_pixels[]);
-    void SampleRenderer::downloadIncidentAngles(float h_incident_angles[]);
+    void downloadIncidentAngles(float h_incident_angles[]);
 
 
     /*! set camera to render with */
     // void setCamera(const Camera &camera);
-    void SampleRenderer::setCameraGroup(const Camera* cameras, const int numCameras, const vec2i &spliting);
+    void setCameraGroup(const Camera* cameras, const int numCameras, const vec2i &spliting);
+    
+    void print_dimension();
+
+
   protected:
     // ------------------------------------------------------------------
     // internal helper functions
@@ -134,7 +138,7 @@ namespace osc {
     LaunchParams launchParams;
     CUDABuffer   launchParamsBuffer;
     /*! @} */
-    box3f bbox;
+    box3f bbox; // lower, upper
     float resolution;
 
     CUDABuffer colorBuffer;
