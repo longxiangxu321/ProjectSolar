@@ -56,7 +56,7 @@ namespace osc {
     : model(model)
   {
     bbox = model->bounds;
-    resolution = 1; // 1 meter
+    resolution = 2; // 1 meter
 
     initOptix();
       
@@ -620,10 +620,14 @@ namespace osc {
     //   <<launchParams.voxel_dim.y<<" "<<launchParams.voxel_dim.z<<std::endl;
 
     colorBuffer.resize(numCameras * spliting.x * spliting.y * sizeof(uint32_t));
-    incident_angleBuffer.resize(numCameras * spliting.x * spliting.y * sizeof(float));
+    incident_azimuthBuffer.resize(numCameras * spliting.x * spliting.y * sizeof(half));
+    incident_elevationBuffer.resize(numCameras * spliting.x * spliting.y * sizeof(half));
+    // incident_angleBuffer.resize(numCameras * spliting.x * spliting.y * sizeof(half));
     // std::cout << "color Buffer " << (colorBuffer.d_pointer()==0) << std::endl;
     launchParams.colorBuffer = (uint32_t*)colorBuffer.d_pointer();
-    launchParams.incident_angleBuffer = (float*)incident_angleBuffer.d_pointer();
+    launchParams.incident_azimuthBuffer = (half*)incident_azimuthBuffer.d_pointer();
+    launchParams.incident_elevationBuffer = (half*)incident_elevationBuffer.d_pointer();
+    // launchParams.incident_angleBuffer = (half*)incident_angleBuffer.d_pointer();
   }
   
 
@@ -634,9 +638,11 @@ namespace osc {
                          launchParams.n_cameras*launchParams.n_azimuth*launchParams.n_elevation);
   }
 
-  void SampleRenderer::downloadIncidentAngles(float h_incident_angles[])
+  void SampleRenderer::downloadIncidentAngles(half h_incident_azimuths[], half h_incident_elevations[])
   {
-    incident_angleBuffer.download(h_incident_angles,
+    incident_azimuthBuffer.download(h_incident_azimuths,
+                                  launchParams.n_cameras*launchParams.n_azimuth*launchParams.n_elevation);
+    incident_elevationBuffer.download(h_incident_elevations,
                                   launchParams.n_cameras*launchParams.n_azimuth*launchParams.n_elevation);
   }
 
@@ -644,9 +650,14 @@ namespace osc {
   {
     std::cout<<"bbox_min: "<<launchParams.bbox_min<<std::endl;
     std::cout<<"bbox_max: "<<launchParams.bbox_max<<std::endl;
+
+    std::cout<<"voxel resolution: "<<launchParams.resolution<<std::endl;
     std::cout<<"voxel_dim x: "<<launchParams.voxel_dim.x<<std::endl;
     std::cout<<"voxel_dim y: "<<launchParams.voxel_dim.y<<std::endl;
     std::cout<<"voxel_dim z: "<<launchParams.voxel_dim.z<<std::endl;
+
+    std::cout<<"hemisphere resolution x: "<<launchParams.hemisphere_resolution.x<<std::endl;
+    std::cout<<"hemisphere resolution y: "<<launchParams.hemisphere_resolution.y<<std::endl;
   }
   
 } // ::osc

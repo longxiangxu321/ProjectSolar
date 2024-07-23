@@ -64,10 +64,11 @@ namespace osc {
       // srand(static_cast<unsigned>(time(0)));
 
       std::ofstream indexFile("../index_map.dat", std::ios::binary | std::ios::out);
-      std::ofstream angleFile("../angle_map.dat", std::ios::binary | std::ios::out);
+      std::ofstream azimuthFile("../azimuth_map.dat", std::ios::binary | std::ios::out);
+      std::ofstream elevationFile("../elevation_map.dat", std::ios::binary | std::ios::out);
 
-      if (!indexFile || !angleFile) {
-        std::cerr << "cannot create semantic_map" << std::endl;
+      if (!indexFile || !azimuthFile || !elevationFile) {
+        std::cerr << "cannot create semantic_map files" << std::endl;
         return 1;
       }
 
@@ -101,13 +102,16 @@ namespace osc {
         renderer->setCameraGroup(cameras, batch_size, hemisphere_resolution);
         renderer->render();
         std::vector<uint32_t> pixels(batch_size*fbSize.x*fbSize.y);
-        std::vector<float> pixels_float(batch_size*fbSize.x*fbSize.y);
+        std::vector<half> incident_azimuth(batch_size*fbSize.x*fbSize.y);
+        std::vector<half> incident_elevation(batch_size*fbSize.x*fbSize.y);
+
 
         renderer->downloadPixels(pixels.data());
-        renderer->downloadIncidentAngles(pixels_float.data());
+        renderer->downloadIncidentAngles(incident_azimuth.data(), incident_elevation.data());
 
         indexFile.write(reinterpret_cast<const char*>(pixels.data()), pixels.size() * sizeof(uint32_t));
-        angleFile.write(reinterpret_cast<const char*>(pixels_float.data()), pixels_float.size() * sizeof(float));
+        azimuthFile.write(reinterpret_cast<const char*>(incident_azimuth.data()), incident_azimuth.size() * sizeof(half));
+        elevationFile.write(reinterpret_cast<const char*>(incident_elevation.data()), incident_elevation.size() * sizeof(half));
 
       }
       
@@ -127,16 +131,23 @@ namespace osc {
       renderer->setCameraGroup(last_cameras, last_batch_size, hemisphere_resolution);
       renderer->render();
 
+      renderer->print_dimension();
+
       std::vector<uint32_t> pixels(batch_size*fbSize.x*fbSize.y);
-      std::vector<float> pixels_float(batch_size*fbSize.x*fbSize.y);
+      std::vector<half> incident_azimuth(batch_size*fbSize.x*fbSize.y);
+      std::vector<half> incident_elevation(batch_size*fbSize.x*fbSize.y);
+
+
       renderer->downloadPixels(pixels.data());
-      renderer->downloadIncidentAngles(pixels_float.data());
+      renderer->downloadIncidentAngles(incident_azimuth.data(), incident_elevation.data());
 
       indexFile.write(reinterpret_cast<const char*>(pixels.data()), pixels.size() * sizeof(uint32_t));
-      angleFile.write(reinterpret_cast<const char*>(pixels_float.data()), pixels_float.size() * sizeof(float));
+      azimuthFile.write(reinterpret_cast<const char*>(incident_azimuth.data()), incident_azimuth.size() * sizeof(half));
+      elevationFile.write(reinterpret_cast<const char*>(incident_elevation.data()), incident_elevation.size() * sizeof(half));
 
       indexFile.close();
-      angleFile.close();
+      azimuthFile.close();
+      elevationFile.close();
 
       std::cout<<"Finito"<<std::endl;
 

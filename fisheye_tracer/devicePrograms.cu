@@ -33,7 +33,8 @@ namespace osc {
   enum { SURFACE_RAY_TYPE=0, RAY_TYPE_COUNT };
   
   struct PRD {
-    float cosDN;
+    float azimuth;
+    float elevation;
     uint32_t voxel_id;
 };
 
@@ -88,28 +89,38 @@ namespace osc {
     const vec3f &A     = sbtData.vertex[index.x];
     const vec3f &B     = sbtData.vertex[index.y];
     const vec3f &C     = sbtData.vertex[index.z];
-    const vec3f Ng     = normalize(cross(B-A,C-A));
+    // const vec3f Ng     = normalize(cross(B-A,C-A));
 
-    const vec3f rayDir = optixGetWorldRayDirection();
+    // const vec3f rayDir = optixGetWorldRayDirection();
 
-    const float cosDN  = fabsf(dot(normalize(rayDir),Ng));
+    // const half cosDN  = fabsf(dot(normalize(rayDir),Ng));
 
     float2 hit_barycentric = optixGetTriangleBarycentrics();
     vec3f hit_point = A * (1.0f - hit_barycentric.x - hit_barycentric.y) +
                       B * hit_barycentric.x +
                       C * hit_barycentric.y;
 
+    vec3f rayOrigin = optixGetWorldRayOrigin();
     
     int voxel_x = (hit_point.x - optixLaunchParams.bbox_min.x)/optixLaunchParams.resolution;
     int voxel_y = (hit_point.y - optixLaunchParams.bbox_min.y)/optixLaunchParams.resolution;
     int voxel_z = (hit_point.z - optixLaunchParams.bbox_min.z)/optixLaunchParams.resolution;
+    vec3f voxel_center = vec3f(voxel_x * optixLaunchParams.resolution + optixLaunchParams.resolution/2,
+                               voxel_y * optixLaunchParams.resolution + optixLaunchParams.resolution/2,
+                               voxel_z * optixLaunchParams.resolution + optixLaunchParams.resolution/2) + optixLaunchParams.bbox_min;
+    
+    vec3f voxel_ray_dir = normalize(rayOrigin - voxel_center);
+    
+    half azimuth = __float2half(atan2(voxel_ray_dir.y, voxel_ray_dir.x)*180.0f / M_PI); // from -180 to 180
+    half elevation = __float2half(atan2(voxel_ray_dir.z, sqrt(voxel_ray_dir.x * voxel_ray_dir.x + voxel_ray_dir.y * voxel_ray_dir.y)*180.0f / M_PI)); // from -90 to 90
     
     uint32_t voxel_id = voxel_x + voxel_y * optixLaunchParams.voxel_dim.x + voxel_z * optixLaunchParams.voxel_dim.x * optixLaunchParams.voxel_dim.y;
 
 
     PRD &prd = *(PRD*)getPRD<PRD>();
     
-    prd.cosDN = cosDN;
+    prd.azimuth = azimuth;
+    prd.elevation = elevation;
     prd.voxel_id = voxel_id;
   }
   
@@ -133,7 +144,8 @@ namespace osc {
     // prd = vec3f(1.f);
     PRD &prd = *(PRD*)getPRD<PRD>();
     
-    prd.cosDN = 1.1f;
+    prd.azimuth = 181.0f;
+    prd.elevation = 91.0f;
     prd.voxel_id = UINT32_MAX_VALUE;
 
   }
@@ -175,7 +187,7 @@ namespace osc {
     vec3f rayDir = normalize(x * tangent + y * bitangent + z * camera_direction);
 
     // vec3f pixelColorPRD = vec3f(0.f);
-    PRD pixelColorPRD = {0.f, 0};
+    PRD pixelColorPRD = {0.f,0.f, 0};
 
     // the values we store the PRD pointer in:
     uint32_t u0, u1;
@@ -197,7 +209,8 @@ namespace osc {
     // const int r = int(255.99f*pixelColorPRD.x);
     // const int g = int(255.99f*pixelColorPRD.y);
     // const int b = int(255.99f*pixelColorPRD.z);
-    const float cosDN = pixelColorPRD.cosDN;
+    const float azimuth = pixelColorPRD.azimuth;
+    const float elevation = pixelColorPRD.elevation;
     const uint32_t voxel_id = pixelColorPRD.voxel_id;
 
     const int r = 1;
@@ -214,7 +227,9 @@ namespace osc {
     // optixLaunchParams.frame.colorBuffer[fbIndex] = rgba;
     const uint32_t fbIndex = ray_id + cam_id * optixLaunchParams.n_azimuth * optixLaunchParams.n_elevation;
     optixLaunchParams.colorBuffer[fbIndex] = voxel_id;
-    optixLaunchParams.incident_angleBuffer[fbIndex] = cosDN;
+    optixLaunchParams.incident_azimuthBuffer[fbIndex] = azimuth;
+    optixLaunchParams.incident_elevationBuffer[fbIndex] = elevation;
+    // optixLaunchParams.incident_angleBuffer[fbIndex] = cosDN;
   }
   
 } // ::osc

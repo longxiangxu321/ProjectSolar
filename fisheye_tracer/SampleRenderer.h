@@ -56,7 +56,8 @@ namespace osc {
 
     /*! download the rendered color buffer */
     void downloadPixels(uint32_t h_pixels[]);
-    void downloadIncidentAngles(float h_incident_angles[]);
+    // void downloadIncidentAngles(float h_incident_angles[]);
+    void SampleRenderer::downloadIncidentAngles(half h_incident_azimuths[], half h_incident_elevations[]);
 
 
     /*! set camera to render with */
@@ -142,7 +143,9 @@ namespace osc {
     float resolution;
 
     CUDABuffer colorBuffer;
-    CUDABuffer incident_angleBuffer;
+    // CUDABuffer incident_angleBuffer;
+    CUDABuffer incident_azimuthBuffer;
+    CUDABuffer incident_elevationBuffer;
 
     /*! the camera we are to render with. */
     Camera lastSetCamera;

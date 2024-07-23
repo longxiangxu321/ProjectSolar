@@ -18,6 +18,7 @@
 
 #include "gdt/math/vec.h"
 #include "sample_pointGrid.h"
+#include <cuda_fp16.h>
 #include "optix7.h"
 
 namespace osc {
@@ -40,7 +41,8 @@ namespace osc {
   struct LaunchParams
   {
     uint32_t *colorBuffer;
-    float *incident_angleBuffer;
+    half *incident_azimuthBuffer;
+    half *incident_elevationBuffer;
     
 
 
