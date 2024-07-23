@@ -53,7 +53,9 @@ namespace osc {
 
       std::vector<GridPoint> gridpoints= create_point_grid(*model);
       std::cout<<"Grid points created: "<< gridpoints.size()<<std::endl;
-      save_point_grid(gridpoints, "../grid_points.dat");
+
+      vec3f translation = model->bounds.center() - model->original_center;
+      save_point_grid(gridpoints, translation, "../grid_points.dat");
       std::cout<<"Grid points saved"<<std::endl;
 
       const vec2i fbSize(vec2i(360,90));

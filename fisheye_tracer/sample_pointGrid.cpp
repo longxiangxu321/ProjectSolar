@@ -72,9 +72,9 @@ void calculate_mass_center(const vec3f &A, const vec3f &B, const vec3f &C, const
 
 
 std::vector<GridPoint> create_point_grid(const Model& citymodel) {
-   std::string output_file = "../grid.xyz";
+//    std::string output_file = "../grid.xyz";
     // std::string output_file = CFG["shadow_calc"]["pointgrid_path"];
-    std::ofstream out(output_file);
+    // std::ofstream out(output_file);
 
     float sampling_density = 16;
 
@@ -82,11 +82,11 @@ std::vector<GridPoint> create_point_grid(const Model& citymodel) {
 
     std::vector<GridPoint> grid_current;
 
-    if (!out.is_open()) {
-        std::cout << "Error opening file " << "'" << output_file <<"'.";
-    }
+    // if (!out.is_open()) {
+    //     std::cout << "Error opening file " << "'" << output_file <<"'.";
+    // }
 
-    else
+    // else
     {
         std::stringstream ss;
 
@@ -135,11 +135,11 @@ std::vector<GridPoint> create_point_grid(const Model& citymodel) {
     }
 
 
-void save_point_grid(const std::vector<GridPoint> &grid_n, const std::string &filename) {
+void save_point_grid(const std::vector<GridPoint> &grid_n, const vec3f &translation, const std::string &filename) {
     std::ofstream output_stream(filename);
     for (const auto &gp : grid_n) {
         output_stream << std::setprecision(6) 
-        << gp.position.x << " " << gp.position.y << " " << gp.position.z << " "
+        << gp.position.x - translation.x << " " << gp.position.y - translation.y << " " << gp.position.z - translation.z<< " "
         << gp.triangle_info.direction.x << " "<< gp.triangle_info.direction.y << " "<< gp.triangle_info.direction.z << " "
         << gp.triangle_info.surface_type<<"\n";
     }

@@ -47,7 +47,7 @@ namespace osc {
         return sqrt(pow(a.x - b.x, 2) + pow(a.y - b.y, 2) + pow(a.z - b.z, 2));
     }
 
-    void save_point_grid(const std::vector<GridPoint> &grid_n, const std::string &filename);
+    void save_point_grid(const std::vector<GridPoint> &grid_n, const vec3f &translation, const std::string &filename);
 
 
     

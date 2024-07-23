@@ -55,8 +55,11 @@ namespace osc {
       // std::filesystem::path output_path = "../grid.xyz";
 
       std::vector<GridPoint> gridpoints= create_point_grid(*model);
-
+      
       std::cout<<"Grid points created: "<< gridpoints.size()<<std::endl;
+
+      vec3f translation = model->bounds.center() - model->original_center;
+      save_point_grid(gridpoints, translation, "../grid_points.dat");
 
       auto start = std::chrono::high_resolution_clock::now();
 
