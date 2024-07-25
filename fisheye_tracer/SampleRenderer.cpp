@@ -607,17 +607,17 @@ namespace osc {
     launchParams.n_elevation = spliting.y;
     launchParams.bbox_min = bbox.lower;
     launchParams.bbox_max = bbox.upper;
+
+    // std::cout<<bbox.lower<<std::endl;
+
+    // std::cout<<"bbox_min: "<<launchParams.bbox_min<<std::endl;
+    // std::cout<<"bbox_max: "<<launchParams.bbox_max<<std::endl;
+
     launchParams.resolution = resolution;
     launchParams.hemisphere_resolution = hemisphere_resolution;
     launchParams.voxel_dim = make_int3(ceil((bbox.upper.x - bbox.lower.x) / resolution),
                                              ceil((bbox.upper.y - bbox.lower.y) / resolution),
                                              ceil((bbox.upper.z - bbox.lower.z) / resolution));
-
-    // std::cout<<"bbox_min: "<<launchParams.bbox_min<<std::endl;
-    // std::cout<<"bbox_max: "<<launchParams.bbox_max<<std::endl;
-    // // std::cout<<"voxel_dim: "<<launchParams.voxel_dim<<std::endl;
-    // std::cout<<launchParams.voxel_dim.x<<" "
-    //   <<launchParams.voxel_dim.y<<" "<<launchParams.voxel_dim.z<<std::endl;
 
     colorBuffer.resize(numCameras * spliting.x * spliting.y * sizeof(uint32_t));
     incident_azimuthBuffer.resize(numCameras * spliting.x * spliting.y * sizeof(half));

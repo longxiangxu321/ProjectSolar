@@ -105,6 +105,7 @@ namespace osc {
     int voxel_x = (hit_point.x - optixLaunchParams.bbox_min.x)/optixLaunchParams.resolution;
     int voxel_y = (hit_point.y - optixLaunchParams.bbox_min.y)/optixLaunchParams.resolution;
     int voxel_z = (hit_point.z - optixLaunchParams.bbox_min.z)/optixLaunchParams.resolution;
+
     vec3f voxel_center = vec3f(voxel_x * optixLaunchParams.resolution + optixLaunchParams.resolution/2,
                                voxel_y * optixLaunchParams.resolution + optixLaunchParams.resolution/2,
                                voxel_z * optixLaunchParams.resolution + optixLaunchParams.resolution/2) + optixLaunchParams.bbox_min;
@@ -115,7 +116,7 @@ namespace osc {
     half elevation = __float2half(atan2(voxel_ray_dir.z, sqrt(voxel_ray_dir.x * voxel_ray_dir.x + voxel_ray_dir.y * voxel_ray_dir.y)*180.0f / M_PI)); // from -90 to 90
     
     uint32_t voxel_id = voxel_x + voxel_y * optixLaunchParams.voxel_dim.x + voxel_z * optixLaunchParams.voxel_dim.x * optixLaunchParams.voxel_dim.y;
-
+    
 
     PRD &prd = *(PRD*)getPRD<PRD>();
     

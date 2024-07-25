@@ -51,6 +51,9 @@ namespace osc {
     /*! render one frame */
     void render();
 
+    // LaunchParams launchParams;
+    // box3f bbox;
+
     /*! resize frame buffer to given resolution */
     // void resize(const vec2i &newSize);
 

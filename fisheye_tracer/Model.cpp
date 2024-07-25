@@ -31,8 +31,9 @@ namespace osc {
     void Model::transformModel() {
         for (auto mesh : meshes) {
             for (int i = 0; i < mesh->vertex.size(); i++) {
-                mesh->vertex[i] = vec3f(mesh->vertex[i].x - bounds.lower.x, 
-                                        mesh->vertex[i].y - bounds.lower.y, mesh->vertex[i].z - bounds.center().z);
+                vec3f translated_vertex = vec3f(mesh->vertex[i].x - bounds.lower.x, 
+                                        mesh->vertex[i].y - bounds.lower.y, mesh->vertex[i].z - bounds.lower.z);
+                mesh->vertex[i] = translated_vertex;
             }
         }
 

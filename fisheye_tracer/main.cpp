@@ -50,6 +50,10 @@ namespace osc {
 
       model->transformModel();
       SampleRenderer *renderer = new SampleRenderer(model);
+      // std::cout<<renderer->bbox.lower<<std::endl;
+      // std::cout<<renderer->bbox.upper<<std::endl;
+      // std::cout<<renderer->launchParams.bbox_min<<std::endl;
+      // std::cout<<renderer->launchParams.bbox_max<<std::endl;
 
       std::vector<GridPoint> gridpoints= create_point_grid(*model);
       std::cout<<"Grid points created: "<< gridpoints.size()<<std::endl;
