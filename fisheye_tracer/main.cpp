@@ -72,6 +72,7 @@ namespace osc {
       std::ofstream indexFile("../index_map.dat", std::ios::binary | std::ios::out);
       std::ofstream azimuthFile("../azimuth_map.dat", std::ios::binary | std::ios::out);
       std::ofstream elevationFile("../elevation_map.dat", std::ios::binary | std::ios::out);
+      std::ofstream horizonfactorFile("../horizon_factor_map.dat", std::ios::binary | std::ios::out);
 
       if (!indexFile || !azimuthFile || !elevationFile) {
         std::cerr << "cannot create semantic_map files" << std::endl;
@@ -110,15 +111,17 @@ namespace osc {
         std::vector<uint32_t> pixels(batch_size*fbSize.x*fbSize.y);
         std::vector<half> incident_azimuth(batch_size*fbSize.x*fbSize.y);
         std::vector<half> incident_elevation(batch_size*fbSize.x*fbSize.y);
+        std::vector<float> horizon_factor(batch_size);
 
 
         renderer->downloadPixels(pixels.data());
         renderer->downloadIncidentAngles(incident_azimuth.data(), incident_elevation.data());
+        renderer->downloadHorizonFactors(horizon_factor.data());
 
         indexFile.write(reinterpret_cast<const char*>(pixels.data()), pixels.size() * sizeof(uint32_t));
         azimuthFile.write(reinterpret_cast<const char*>(incident_azimuth.data()), incident_azimuth.size() * sizeof(half));
         elevationFile.write(reinterpret_cast<const char*>(incident_elevation.data()), incident_elevation.size() * sizeof(half));
-
+        horizonfactorFile.write(reinterpret_cast<const char*>(horizon_factor.data()), horizon_factor.size() * sizeof(float));
       }
       
 
@@ -142,18 +145,22 @@ namespace osc {
       std::vector<uint32_t> pixels(batch_size*fbSize.x*fbSize.y);
       std::vector<half> incident_azimuth(batch_size*fbSize.x*fbSize.y);
       std::vector<half> incident_elevation(batch_size*fbSize.x*fbSize.y);
+      std::vector<float> horizon_factor(batch_size);
 
 
       renderer->downloadPixels(pixels.data());
       renderer->downloadIncidentAngles(incident_azimuth.data(), incident_elevation.data());
+      renderer->downloadHorizonFactors(horizon_factor.data());
 
       indexFile.write(reinterpret_cast<const char*>(pixels.data()), pixels.size() * sizeof(uint32_t));
       azimuthFile.write(reinterpret_cast<const char*>(incident_azimuth.data()), incident_azimuth.size() * sizeof(half));
       elevationFile.write(reinterpret_cast<const char*>(incident_elevation.data()), incident_elevation.size() * sizeof(half));
+      horizonfactorFile.write(reinterpret_cast<const char*>(horizon_factor.data()), horizon_factor.size() * sizeof(float));
 
       indexFile.close();
       azimuthFile.close();
       elevationFile.close();
+      horizonfactorFile.close();
 
       std::cout<<"Finito"<<std::endl;
 

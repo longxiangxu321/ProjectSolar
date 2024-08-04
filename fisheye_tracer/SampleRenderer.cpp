@@ -56,7 +56,7 @@ namespace osc {
     : model(model)
   {
     bbox = model->bounds;
-    resolution = 2; // 1 meter
+    
 
     initOptix();
       
@@ -536,7 +536,9 @@ namespace osc {
   }
 
   /*! set camera to render with */
-  void SampleRenderer::setCameraGroup(const Camera* cameras, const int numCameras, const vec2i &hemisphere_resolution)
+  void SampleRenderer::setCameraGroup(const Camera* cameras, const int numCameras, 
+  const vec2i &hemisphere_resolution, const float resolution,
+                      const float horizon_angle_threshold , const int horizon_gamma)
   {
 
     vec2i spliting = vec2i(360/hemisphere_resolution.x, 90/hemisphere_resolution.y);
@@ -545,6 +547,10 @@ namespace osc {
     vec3f* h_directions = new vec3f[numCameras];
     vec3f* h_tangents = new vec3f[numCameras];
     vec3f* h_bitangents = new vec3f[numCameras];
+
+    // float* h_horizon_masks = new float[numCameras];
+    // std::fill(h_horizon_masks, h_horizon_masks + numCameras, 0.0f);
+    
 
     for (int i = 0; i < numCameras; i++) {
       vec3f origin = cameras[i].from;
@@ -572,17 +578,26 @@ namespace osc {
     vec3f* d_directions;
     vec3f* d_tangents;
     vec3f* d_bitangents;
+
+    // float* d_horizon_masks;
+
     
     cudaMalloc(&d_positions, numCameras * sizeof(vec3f));
     cudaMalloc(&d_directions, numCameras * sizeof(vec3f));
     cudaMalloc(&d_tangents, numCameras * sizeof(vec3f));
     cudaMalloc(&d_bitangents, numCameras * sizeof(vec3f));
 
+    // cudaMalloc(&d_horizon_masks, numCameras * sizeof(float));
+
+
     // Copy data from host to device
     cudaMemcpy(d_positions, h_positions, numCameras * sizeof(vec3f), cudaMemcpyHostToDevice);
     cudaMemcpy(d_directions, h_directions, numCameras * sizeof(vec3f), cudaMemcpyHostToDevice);
     cudaMemcpy(d_tangents, h_tangents, numCameras * sizeof(vec3f), cudaMemcpyHostToDevice);
     cudaMemcpy(d_bitangents, h_bitangents, numCameras * sizeof(vec3f), cudaMemcpyHostToDevice);
+
+    // cudaMemcpy(d_horizon_masks, h_horizon_masks, numCameras * sizeof(float), cudaMemcpyHostToDevice);
+
 
 
 
@@ -591,6 +606,8 @@ namespace osc {
     launchParams.directions = d_directions;
     launchParams.tangents = d_tangents;
     launchParams.bitangents = d_bitangents;
+
+    // launchParams.horizon_masks = d_horizon_masks;
 
     // launchParams.kdTree = d_kdtree;
 
@@ -601,6 +618,7 @@ namespace osc {
     delete[] h_directions;
     delete[] h_tangents;
     delete[] h_bitangents;
+
 
     launchParams.n_cameras = numCameras;
     launchParams.n_azimuth = spliting.x;
@@ -614,6 +632,8 @@ namespace osc {
     // std::cout<<"bbox_max: "<<launchParams.bbox_max<<std::endl;
 
     launchParams.resolution = resolution;
+    // launchParams.horizon_threshold = horizon_angle_threshold;
+    launchParams.horizon_gamma = horizon_gamma;
     launchParams.hemisphere_resolution = hemisphere_resolution;
     launchParams.voxel_dim = make_int3(ceil((bbox.upper.x - bbox.lower.x) / resolution),
                                              ceil((bbox.upper.y - bbox.lower.y) / resolution),
@@ -622,12 +642,14 @@ namespace osc {
     colorBuffer.resize(numCameras * spliting.x * spliting.y * sizeof(uint32_t));
     incident_azimuthBuffer.resize(numCameras * spliting.x * spliting.y * sizeof(half));
     incident_elevationBuffer.resize(numCameras * spliting.x * spliting.y * sizeof(half));
-    // incident_angleBuffer.resize(numCameras * spliting.x * spliting.y * sizeof(half));
-    // std::cout << "color Buffer " << (colorBuffer.d_pointer()==0) << std::endl;
+
+    horizon_factorBuffer.resize(numCameras * sizeof(float));
+    cudaMemset(reinterpret_cast<void*>(horizon_factorBuffer.d_pointer()), 0, numCameras * sizeof(float));
+    launchParams.horizon_factorBuffer = (float*)horizon_factorBuffer.d_pointer();
+
     launchParams.colorBuffer = (uint32_t*)colorBuffer.d_pointer();
     launchParams.incident_azimuthBuffer = (half*)incident_azimuthBuffer.d_pointer();
     launchParams.incident_elevationBuffer = (half*)incident_elevationBuffer.d_pointer();
-    // launchParams.incident_angleBuffer = (half*)incident_angleBuffer.d_pointer();
   }
   
 
@@ -645,6 +667,12 @@ namespace osc {
     incident_elevationBuffer.download(h_incident_elevations,
                                   launchParams.n_cameras*launchParams.n_azimuth*launchParams.n_elevation);
   }
+
+  void SampleRenderer::downloadHorizonFactors(float h_horizon_factors[])
+  {
+    horizon_factorBuffer.download(h_horizon_factors, launchParams.n_cameras);
+  }
+
 
   void SampleRenderer::print_dimension()
   {

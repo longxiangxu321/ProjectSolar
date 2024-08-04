@@ -60,13 +60,15 @@ namespace osc {
     /*! download the rendered color buffer */
     void downloadPixels(uint32_t h_pixels[]);
     // void downloadIncidentAngles(float h_incident_angles[]);
-    void SampleRenderer::downloadIncidentAngles(half h_incident_azimuths[], half h_incident_elevations[]);
-
+    void downloadIncidentAngles(half h_incident_azimuths[], half h_incident_elevations[]);
+    void SampleRenderer::downloadHorizonFactors(float h_horizon_factors[]);
 
     /*! set camera to render with */
     // void setCamera(const Camera &camera);
-    void setCameraGroup(const Camera* cameras, const int numCameras, const vec2i &spliting);
+    // void setCameraGroup(const Camera* cameras, const int numCameras, const vec2i &spliting);
     
+    void setCameraGroup(const Camera* cameras, const int numCameras, const vec2i &hemisphere_resolution, const float resolution = 2, 
+                      const float horizon_angle_threshold = M_PI/36, const int horizon_gamma = 50);
     void print_dimension();
 
 
@@ -143,12 +145,12 @@ namespace osc {
     CUDABuffer   launchParamsBuffer;
     /*! @} */
     box3f bbox; // lower, upper
-    float resolution;
+    // float resolution;
 
     CUDABuffer colorBuffer;
-    // CUDABuffer incident_angleBuffer;
     CUDABuffer incident_azimuthBuffer;
     CUDABuffer incident_elevationBuffer;
+    CUDABuffer horizon_factorBuffer;
 
     /*! the camera we are to render with. */
     Camera lastSetCamera;

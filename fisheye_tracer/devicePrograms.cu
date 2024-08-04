@@ -36,6 +36,7 @@ namespace osc {
     float azimuth;
     float elevation;
     uint32_t voxel_id;
+    int mask;
 };
 
 
@@ -112,8 +113,8 @@ namespace osc {
     
     vec3f voxel_ray_dir = normalize(rayOrigin - voxel_center);
     
-    half azimuth = __float2half(atan2(voxel_ray_dir.y, voxel_ray_dir.x)*180.0f / M_PI); // from -180 to 180
-    half elevation = __float2half(atan2(voxel_ray_dir.z, sqrt(voxel_ray_dir.x * voxel_ray_dir.x + voxel_ray_dir.y * voxel_ray_dir.y)*180.0f / M_PI)); // from -90 to 90
+    half azimuth = __float2half(atan2(voxel_ray_dir.y, voxel_ray_dir.x)); // from -180 to 180
+    half elevation = __float2half(atan2(voxel_ray_dir.z, sqrt(voxel_ray_dir.x * voxel_ray_dir.x + voxel_ray_dir.y * voxel_ray_dir.y))); // from -90 to 90
     
     uint32_t voxel_id = voxel_x + voxel_y * optixLaunchParams.voxel_dim.x + voxel_z * optixLaunchParams.voxel_dim.x * optixLaunchParams.voxel_dim.y;
     
@@ -123,6 +124,7 @@ namespace osc {
     prd.azimuth = azimuth;
     prd.elevation = elevation;
     prd.voxel_id = voxel_id;
+    prd.mask = 1;
   }
   
   extern "C" __global__ void __anyhit__radiance()
@@ -148,6 +150,7 @@ namespace osc {
     prd.azimuth = 181.0f;
     prd.elevation = 91.0f;
     prd.voxel_id = UINT32_MAX_VALUE;
+    prd.mask = 0;
 
   }
 
@@ -186,6 +189,9 @@ namespace osc {
 
     // 计算并归一化射线方向
     vec3f rayDir = normalize(x * tangent + y * bitangent + z * camera_direction);
+
+    float angle_with_horizon  = acos(dot(rayDir, vec3f(0.0f, 0.0f, 1.0f)));
+
 
     // vec3f pixelColorPRD = vec3f(0.f);
     PRD pixelColorPRD = {0.f,0.f, 0};
@@ -227,6 +233,12 @@ namespace osc {
     // const uint32_t fbIndex = ix+iy*optixLaunchParams.frame.size.x;
     // optixLaunchParams.frame.colorBuffer[fbIndex] = rgba;
     const uint32_t fbIndex = ray_id + cam_id * optixLaunchParams.n_azimuth * optixLaunchParams.n_elevation;
+    float pixel_horizon_intensity = (pixelColorPRD.mask *
+                                    pow((1 - fabs(cos(angle_with_horizon))), optixLaunchParams.horizon_gamma))/ 
+                                    (optixLaunchParams.n_azimuth * optixLaunchParams.n_elevation);
+    
+    
+    optixLaunchParams.horizon_factorBuffer[cam_id] += pixel_horizon_intensity;
     optixLaunchParams.colorBuffer[fbIndex] = voxel_id;
     optixLaunchParams.incident_azimuthBuffer[fbIndex] = azimuth;
     optixLaunchParams.incident_elevationBuffer[fbIndex] = elevation;

@@ -43,8 +43,8 @@ namespace osc {
     uint32_t *colorBuffer;
     half *incident_azimuthBuffer;
     half *incident_elevationBuffer;
-    
-
+    float *horizon_factorBuffer; // buffer for horizon factor, with shading
+  
 
     uint32_t n_elevation;
     uint32_t n_azimuth;
@@ -59,6 +59,9 @@ namespace osc {
     vec3f bbox_max;
     float resolution; // voxel grid resolution
     int3 voxel_dim; // voxel grid size
+    // float horizon_threshold;
+    int horizon_gamma;
+    
 
     vec2i hemisphere_resolution;
 
