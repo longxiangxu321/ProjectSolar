@@ -61,7 +61,8 @@ namespace osc {
     void downloadPixels(uint32_t h_pixels[]);
     // void downloadIncidentAngles(float h_incident_angles[]);
     void downloadIncidentAngles(half h_incident_azimuths[], half h_incident_elevations[]);
-    void SampleRenderer::downloadHorizonFactors(float h_horizon_factors[]);
+    void downloadHorizonFactors(float h_horizon_factors[]);
+    void downloadSVF(float h_svf[]);
 
     /*! set camera to render with */
     // void setCamera(const Camera &camera);
@@ -151,6 +152,8 @@ namespace osc {
     CUDABuffer incident_azimuthBuffer;
     CUDABuffer incident_elevationBuffer;
     CUDABuffer horizon_factorBuffer;
+    CUDABuffer horizon_importanceBuffer; // buffer for normalizing horizon factor
+    CUDABuffer sky_view_factorBuffer; // buffer for sky view factor, with shading
 
     /*! the camera we are to render with. */
     Camera lastSetCamera;

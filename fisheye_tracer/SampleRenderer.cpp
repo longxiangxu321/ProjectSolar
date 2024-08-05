@@ -644,8 +644,15 @@ namespace osc {
     incident_elevationBuffer.resize(numCameras * spliting.x * spliting.y * sizeof(half));
 
     horizon_factorBuffer.resize(numCameras * sizeof(float));
-    cudaMemset(reinterpret_cast<void*>(horizon_factorBuffer.d_pointer()), 0, numCameras * sizeof(float));
+    horizon_importanceBuffer.resize(numCameras * sizeof(float));
+    sky_view_factorBuffer.resize(numCameras * sizeof(float));
+    cudaMemset(reinterpret_cast<void*>(horizon_factorBuffer.d_pointer()), 0.0f, numCameras * sizeof(float));
+    cudaMemset(reinterpret_cast<void*>(horizon_importanceBuffer.d_pointer()), 0.0f, numCameras * sizeof(float));
+    cudaMemset(reinterpret_cast<void*>(sky_view_factorBuffer.d_pointer()), 0.0f, numCameras * sizeof(float));
+
     launchParams.horizon_factorBuffer = (float*)horizon_factorBuffer.d_pointer();
+    launchParams.horizon_importanceBuffer = (float*)horizon_importanceBuffer.d_pointer();
+    launchParams.sky_view_factorBuffer = (float*)sky_view_factorBuffer.d_pointer();
 
     launchParams.colorBuffer = (uint32_t*)colorBuffer.d_pointer();
     launchParams.incident_azimuthBuffer = (half*)incident_azimuthBuffer.d_pointer();
@@ -670,7 +677,25 @@ namespace osc {
 
   void SampleRenderer::downloadHorizonFactors(float h_horizon_factors[])
   {
-    horizon_factorBuffer.download(h_horizon_factors, launchParams.n_cameras);
+    float* horizon_importance = new float[launchParams.n_cameras];
+    float* horizon_factors = new float[launchParams.n_cameras];
+
+    horizon_importanceBuffer.download(horizon_importance, launchParams.n_cameras);
+    horizon_factorBuffer.download(horizon_factors, launchParams.n_cameras);
+
+    for (int i = 0; i < launchParams.n_cameras; i++) {
+      // std::cout<<"test original"<<horizon_importance[i]<< " " <<horizon_factors[i] << std::endl;
+      h_horizon_factors[i] = horizon_factors[i] / horizon_importance[i];
+
+    }
+    
+    delete[] horizon_importance; // 释放 horizon_importance 数组的内存
+    delete[] horizon_factors;    // 释放 horizon_factors 数组的内存
+    
+  }
+
+  void SampleRenderer::downloadSVF(float h_svf[]){
+    sky_view_factorBuffer.download(h_svf, launchParams.n_cameras);
   }
 
 
