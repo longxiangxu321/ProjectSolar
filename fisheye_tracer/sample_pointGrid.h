@@ -50,6 +50,9 @@ namespace osc {
     void save_point_grid(const std::vector<GridPoint> &grid_n, const vec3f &translation, const std::string &filename);
 
 
+    std::vector<GridPoint> clean_point_grid(const std::vector<GridPoint> &grid_n);
+
+
     
     
 }   

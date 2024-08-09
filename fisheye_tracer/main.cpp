@@ -36,11 +36,11 @@ namespace osc {
   extern "C" int main(int ac, char **av)
   {
     try {
-      Model *model = loadOBJ(
+      Model *model = loadCityJSON(
 #ifdef _WIN32
       // on windows, visual studio creates _two_ levels of build dir
       // (x86/Release)
-      "../../models/sponza.obj"
+      "../../models/Delft.city.json"
 #else
       // on linux, common practice is to have ONE level of build dir
       // (say, <project>/build/)...
@@ -55,7 +55,8 @@ namespace osc {
       // std::cout<<renderer->launchParams.bbox_min<<std::endl;
       // std::cout<<renderer->launchParams.bbox_max<<std::endl;
 
-      std::vector<GridPoint> gridpoints= create_point_grid(*model);
+      std::vector<GridPoint> raw_gridpoints= create_point_grid(*model);
+      std::vector<GridPoint> gridpoints = clean_point_grid(raw_gridpoints);
       std::cout<<"Grid points created: "<< gridpoints.size()<<std::endl;
 
       vec3f translation = model->bounds.center() - model->original_center;
