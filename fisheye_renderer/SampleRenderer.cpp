@@ -527,7 +527,7 @@ namespace osc {
   {
     lastSetCamera = camera;
     launchParams.camera.position  = camera.from;
-    launchParams.camera.direction = normalize(camera.at-camera.from);
+    launchParams.camera.direction = normalize(camera.at);
     const float cosFovy = 0.66f;
     const float aspect = launchParams.frame.size.x / float(launchParams.frame.size.y);
     launchParams.camera.horizontal
@@ -539,7 +539,8 @@ namespace osc {
 
     launchParams.camera.tangent   = normalize(cross(launchParams.camera.direction,
                                                     vec3f(0.f, 1.f, 0.f)));
-    if (length(launchParams.camera.tangent) < 1e-6) {
+    if (length(launchParams.camera.tangent) < 1e-6 || isnan(launchParams.camera.tangent.x) ||
+               isnan(launchParams.camera.tangent.y) || isnan(launchParams.camera.tangent.z)) {
         launchParams.camera.tangent = normalize(cross(launchParams.camera.direction,
                                                      vec3f(0.f, 0.f, 1.f)));
     }

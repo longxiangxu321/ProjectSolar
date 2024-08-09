@@ -599,7 +599,7 @@ namespace osc {
     // cudaMemcpy(d_horizon_masks, h_horizon_masks, numCameras * sizeof(float), cudaMemcpyHostToDevice);
 
 
-
+    //launchParams.batch_offset = batch_offset;
 
     // Update the device pointers in launchParams
     launchParams.positions = d_positions;
@@ -645,14 +645,14 @@ namespace osc {
 
     horizon_factorBuffer.resize(numCameras * sizeof(float));
     horizon_importanceBuffer.resize(numCameras * sizeof(float));
-    sky_view_factorBuffer.resize(numCameras * sizeof(float));
+    sky_view_factorBuffer.resize(numCameras * sizeof(int));
     cudaMemset(reinterpret_cast<void*>(horizon_factorBuffer.d_pointer()), 0.0f, numCameras * sizeof(float));
     cudaMemset(reinterpret_cast<void*>(horizon_importanceBuffer.d_pointer()), 0.0f, numCameras * sizeof(float));
-    cudaMemset(reinterpret_cast<void*>(sky_view_factorBuffer.d_pointer()), 0.0f, numCameras * sizeof(float));
+    cudaMemset(reinterpret_cast<void*>(sky_view_factorBuffer.d_pointer()), 0.0f, numCameras * sizeof(int));
 
     launchParams.horizon_factorBuffer = (float*)horizon_factorBuffer.d_pointer();
     launchParams.horizon_importanceBuffer = (float*)horizon_importanceBuffer.d_pointer();
-    launchParams.sky_view_factorBuffer = (float*)sky_view_factorBuffer.d_pointer();
+    launchParams.sky_view_factorBuffer = (int*)sky_view_factorBuffer.d_pointer();
 
     launchParams.colorBuffer = (uint32_t*)colorBuffer.d_pointer();
     launchParams.incident_azimuthBuffer = (half*)incident_azimuthBuffer.d_pointer();
@@ -694,7 +694,7 @@ namespace osc {
     
   }
 
-  void SampleRenderer::downloadSVF(float h_svf[]){
+  void SampleRenderer::downloadSVF(int h_svf[]){
     sky_view_factorBuffer.download(h_svf, launchParams.n_cameras);
   }
 

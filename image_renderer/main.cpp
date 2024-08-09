@@ -129,9 +129,9 @@ namespace osc {
       // Camera camera = { /*from*/vec3f(-10.07f, 20.681f, -2.7304f),
       //                   /* at */model->bounds.center()-vec3f(0,400,0),
       //                   /* up */vec3f(0.f,1.f,0.f) };
-      model->transformModel();
-      vec3f lookfrom = model->bounds.center() + vec3f(0, 0, 10);
-      vec3f lookat = model->bounds.center();
+      // model->transformModel();
+      vec3f lookfrom = vec3f(84574.60000, 445920.00000, -0.39899);
+      vec3f lookat = vec3f(0.00000, -0.00000, 1.00000);
 
       Camera camera = { /*from*/ lookfrom,
                   /* at */ lookat,

@@ -45,7 +45,7 @@ namespace osc {
     half *incident_elevationBuffer;
     float *horizon_factorBuffer; // buffer for horizon factor, with shading
     float *horizon_importanceBuffer; // buffer for horizon importance, without shading, used for normalization
-    float *sky_view_factorBuffer; // buffer for sky view factor, with shading
+    int *sky_view_factorBuffer; // buffer for sky view factor, with shading
 
     uint32_t n_elevation;
     uint32_t n_azimuth;

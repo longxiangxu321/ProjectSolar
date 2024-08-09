@@ -173,7 +173,7 @@ namespace osc {
 
 
     float theta = degrees_to_radians(float(ix) * optixLaunchParams.hemisphere_resolution.x);
-    float phi = degrees_to_radians(float(iy) * optixLaunchParams.hemisphere_resolution.y) * 0.5f;
+    float phi = degrees_to_radians(float(iy) * optixLaunchParams.hemisphere_resolution.y);
     // float theta = screen.x * 2.0f * M_PI;  // 从 0 到 2*PI
     // float phi = screen.y * 0.5f * M_PI;           // 从 0 到 PI
 
@@ -223,6 +223,7 @@ namespace osc {
     // and write to frame buffer ...
     // const uint32_t fbIndex = ix+iy*optixLaunchParams.frame.size.x;
     // optixLaunchParams.frame.colorBuffer[fbIndex] = rgba;
+    // int offset = optixLaunchParams.batch_offset * optixLaunchParams.n_azimuth * optixLaunchParams.n_elevation;
     const uint32_t fbIndex = ray_id + cam_id * optixLaunchParams.n_azimuth * optixLaunchParams.n_elevation;
     float importance = pow((1 - fabs(cos(angle_with_horizon))), optixLaunchParams.horizon_gamma);
     // float pixel_horizon_intensity = (pixelColorPRD.mask *importance);
@@ -230,11 +231,10 @@ namespace osc {
 
     // optixLaunchParams.horizon_factorBuffer[cam_id] += 1.0f;
     // optixLaunchParams.horizon_importanceBuffer[cam_id] += 1.0f;
-    float svf_pixel = static_cast<float>(pixelColorPRD.mask) / (optixLaunchParams.n_azimuth * optixLaunchParams.n_elevation);
 
     atomicAdd(&optixLaunchParams.horizon_factorBuffer[cam_id], importance* pixelColorPRD.mask);
     atomicAdd(&optixLaunchParams.horizon_importanceBuffer[cam_id], importance);
-    atomicAdd(&optixLaunchParams.sky_view_factorBuffer[cam_id], svf_pixel);
+    atomicAdd(&optixLaunchParams.sky_view_factorBuffer[cam_id], pixelColorPRD.mask);
 
     optixLaunchParams.colorBuffer[fbIndex] = voxel_id;
     optixLaunchParams.incident_azimuthBuffer[fbIndex] = azimuth;

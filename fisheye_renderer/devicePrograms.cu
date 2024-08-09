@@ -133,7 +133,7 @@ namespace osc {
 
     // 将屏幕空间坐标转换为球坐标
     float theta = degrees_to_radians(float(ix));
-    float phi = degrees_to_radians(float(iy)) / 2.0f;
+    float phi = degrees_to_radians(float(iy));
     // float theta = screen.x * 2.0f * M_PI;  // 从 0 到 2*PI
     // float phi = screen.y * 0.5f * M_PI;           // 从 0 到 PI
 

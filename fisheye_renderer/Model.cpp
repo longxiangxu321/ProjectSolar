@@ -186,7 +186,7 @@ namespace osc {
             if (co.value()["type"] == "BuildingPart") {
                 vertexMap.clear();
                 mesh = new TriangleMesh;
-
+                int gmlid_int;
                 for (auto &g: co.value()["geometry"]) {
                     for (int i = 0; i< g["boundaries"][0].size(); i++) {
                         std::vector<std::vector<int>> triangle = g["boundaries"][0][i];
@@ -194,7 +194,7 @@ namespace osc {
                             triangle[0][0]==triangle[0][1] || 
                             triangle[0][0]==triangle[0][2] || 
                             triangle[0][1]==triangle[0][2]) {
-                            int gmlid_int = g["semantics"]["surfaces"][i]["global_idx"];
+                            gmlid_int = g["semantics"]["surfaces"][i]["global_idx"];
 
                             std::cout<<"a triangle is not valid, identifier: "<<gmlid_int<<std::endl;
                             continue;
@@ -202,7 +202,7 @@ namespace osc {
                         else{
                             // std::string surf_type = g["semantics"]["surfaces"][i]["type"];
                             // if (targetTypes.find(surf_type) != targetTypes.end()) {
-                                int gmlid_int = g["semantics"]["surfaces"][i]["global_idx"];
+                                gmlid_int = g["semantics"]["surfaces"][i]["global_idx"];
                                 int global_v0 = triangle[0][0];
                                 int global_v1 = triangle[0][1];
                                 int global_v2 = triangle[0][2];
@@ -242,7 +242,7 @@ namespace osc {
                 }
                 
                 
-                mesh->diffuse = gdt::randomColor(building_index);
+                mesh->diffuse = gdt::randomColor(gmlid_int);
                 building_index++;
                 
                 assert(mesh->vertex.size() == vertexMap.size());

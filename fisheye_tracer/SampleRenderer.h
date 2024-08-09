@@ -62,7 +62,7 @@ namespace osc {
     // void downloadIncidentAngles(float h_incident_angles[]);
     void downloadIncidentAngles(half h_incident_azimuths[], half h_incident_elevations[]);
     void downloadHorizonFactors(float h_horizon_factors[]);
-    void downloadSVF(float h_svf[]);
+    void downloadSVF(int h_svf[]);
 
     /*! set camera to render with */
     // void setCamera(const Camera &camera);

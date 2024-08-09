@@ -132,7 +132,7 @@ namespace osc {
       // Camera camera = { /*from*/vec3f(-10.07f, 20.681f, -2.7304f),
       //                   /* at */model->bounds.center()-vec3f(0,400,0),
       //                   /* up */vec3f(0.f,1.f,0.f) };
-      model->transformModel();
+      // model->transformModel();
 
       // vec3f lookfrom = model->bounds.center() + vec3f(0, 0, 500);
       // vec3f lookat = model->bounds.center();
@@ -160,17 +160,18 @@ namespace osc {
       const vec2i fbSize(vec2i(360,90));
 
       auto start = std::chrono::high_resolution_clock::now();
-      std::vector<vec3f> lookfroms = {vec3f(-10.07f, 20.681f, 20), vec3f(0, 0, 20), vec3f(300, 100, 10), vec3f(200, -50, 15)};
+      std::vector<vec3f> lookfroms = {vec3f(84710.50000, 445936.00000, 0.37267)};
+      std::vector<vec3f> lookats = {vec3f(-0.30203, 0.95330, 0.00000)};
       for (int i = 0; i < lookfroms.size(); i++) {
         Camera camera = { /*from*/lookfroms[i],
-                          /* at */model->bounds.center()-vec3f(0,400,0),
+                          /* at */lookats[i],
                           /* up */vec3f(0.f,1.f,0.f) };
         renderer->resize(fbSize);
         renderer->setCamera(camera);
         renderer->render();
         std::vector<uint32_t> pixels(fbSize.x*fbSize.y);
         renderer->downloadPixels(pixels.data());
-        const std::string fileName = "rendered_fisheye_" + std::to_string(i) + ".png";
+        const std::string fileName = "../rendered_fisheye_" + std::to_string(i) + ".png";
         stbi_write_png(fileName.c_str(),fbSize.x,fbSize.y,4,
                        pixels.data(),fbSize.x*sizeof(uint32_t));
         std::cout << GDT_TERMINAL_GREEN

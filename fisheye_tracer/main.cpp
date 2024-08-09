@@ -90,8 +90,12 @@ namespace osc {
       
       // vec2i spliting = vec2i(360, 90);
 
+      int point_id = 0;
+      int choosen_id = 19402;
+
       std::cout<<"Rendering with batch size "<<batch_size<<std::endl;
       std::cout <<"Total number of batches: "<<num_batches<<std::endl;
+      int batch_offset = 0;
       for (uint32_t i = 0; i < num_batches - 1; i++) {
         if (i % 10 == 0) {
           std::cout<<GDT_TERMINAL_GREEN<<"Rendering batch "<<i<<" to "<< i+10 <<std::endl;
@@ -105,8 +109,13 @@ namespace osc {
           vec3f position = point.position;
           vec3f direction = point.triangle_info.direction;
           vec3f up = vec3f(0.f, 1.f, 0.f);
-          Camera cam = {position, position + direction, up};
+          Camera cam = {position, direction, up};
           cameras[j] = cam;
+          if (point_id == choosen_id) {
+            std::cout<<position.x -translation.x <<" "<<position.y -translation.y <<" "<<position.z - translation.z<<std::endl;
+            std::cout<<direction.x<<" "<<direction.y<<" "<<direction.z<<std::endl;
+          }
+          point_id++;
         }
         renderer->setCameraGroup(cameras, batch_size, hemisphere_resolution);
         renderer->render();
@@ -114,7 +123,7 @@ namespace osc {
         std::vector<half> incident_azimuth(batch_size*fbSize.x*fbSize.y);
         std::vector<half> incident_elevation(batch_size*fbSize.x*fbSize.y);
         std::vector<float> horizon_factor(batch_size);
-        std::vector<float> sky_view_factor(batch_size);
+        std::vector<int> sky_view_factor(batch_size);
 
 
         renderer->downloadPixels(pixels.data());
@@ -126,7 +135,9 @@ namespace osc {
         azimuthFile.write(reinterpret_cast<const char*>(incident_azimuth.data()), incident_azimuth.size() * sizeof(half));
         elevationFile.write(reinterpret_cast<const char*>(incident_elevation.data()), incident_elevation.size() * sizeof(half));
         horizonfactorFile.write(reinterpret_cast<const char*>(horizon_factor.data()), horizon_factor.size() * sizeof(float));
-        skyviewfactorFile.write(reinterpret_cast<const char*>(sky_view_factor.data()), sky_view_factor.size() * sizeof(float));
+        skyviewfactorFile.write(reinterpret_cast<const char*>(sky_view_factor.data()), sky_view_factor.size() * sizeof(int));
+
+        batch_offset += batch_size;
       }
       
 
@@ -139,10 +150,15 @@ namespace osc {
         vec3f position = point.position;
         vec3f direction = point.triangle_info.direction;
         vec3f up = vec3f(0.f, 1.f, 0.f);
-        Camera cam = {position, position + direction, up};
+        Camera cam = {position, direction, up};
         last_cameras[j] = cam;
+        if (point_id == choosen_id) {
+            std::cout << position.x + translation.x << " " << position.y + translation.y << " " << position.z + translation
+                .z << std::endl;
+        }
+        point_id++;
       }
-      renderer->setCameraGroup(last_cameras, last_batch_size, hemisphere_resolution);
+      renderer->setCameraGroup(last_cameras, last_batch_size, hemisphere_resolution, batch_offset);
       renderer->render();
 
       renderer->print_dimension();
@@ -151,7 +167,7 @@ namespace osc {
       std::vector<half> incident_azimuth(batch_size*fbSize.x*fbSize.y);
       std::vector<half> incident_elevation(batch_size*fbSize.x*fbSize.y);
       std::vector<float> horizon_factor(batch_size);
-      std::vector<float> sky_view_factor(batch_size);
+      std::vector<int> sky_view_factor(batch_size);
 
 
       renderer->downloadPixels(pixels.data());
@@ -163,7 +179,7 @@ namespace osc {
       azimuthFile.write(reinterpret_cast<const char*>(incident_azimuth.data()), incident_azimuth.size() * sizeof(half));
       elevationFile.write(reinterpret_cast<const char*>(incident_elevation.data()), incident_elevation.size() * sizeof(half));
       horizonfactorFile.write(reinterpret_cast<const char*>(horizon_factor.data()), horizon_factor.size() * sizeof(float));
-      skyviewfactorFile.write(reinterpret_cast<const char*>(sky_view_factor.data()), sky_view_factor.size() * sizeof(float));
+      skyviewfactorFile.write(reinterpret_cast<const char*>(sky_view_factor.data()), sky_view_factor.size() * sizeof(int));
 
       indexFile.close();
       azimuthFile.close();
