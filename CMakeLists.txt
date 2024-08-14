@@ -25,9 +25,10 @@ endif()
 project(optix7course VERSION 1.0.1)
 
 cmake_minimum_required(VERSION 2.8)
+set (CMAKE_CXX_STANDARD 17)
 if (NOT WIN32)
 # visual studio doesn't like these (not need them):
-set (CMAKE_CXX_FLAGS "--std=c++11")
+# set (CMAKE_CXX_FLAGS "--std=c++17")
 set (CUDA_PROPAGATE_HOST_FLAGS ON)
 endif()
 
@@ -72,6 +73,8 @@ add_subdirectory(common/glfWindow EXCLUDE_FROM_ALL)
 # ------------------------------------------------------------------
 
 set(optix_LIBRARY "")
+
+add_definitions(-DPROJECT_ROOT="${CMAKE_SOURCE_DIR}")
 
 # a first, simple, hello-world applicaion that creates a context, and
 # says hello...

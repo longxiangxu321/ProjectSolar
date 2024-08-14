@@ -30,7 +30,9 @@ add_executable(fishEye_Tracer
   ${CMAKE_SOURCE_DIR}/common/sample_PointGrid.h
   ${CMAKE_SOURCE_DIR}/common/sample_PointGrid.cpp
   ${CMAKE_SOURCE_DIR}/common/Model.h  
-  ${CMAKE_SOURCE_DIR}/common/Model.cpp  
+  ${CMAKE_SOURCE_DIR}/common/Model.cpp
+  ${CMAKE_SOURCE_DIR}/common/read_solar.h
+  ${CMAKE_SOURCE_DIR}/common/read_solar.cpp
   main.cpp
   )
 

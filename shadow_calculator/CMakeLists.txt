@@ -31,6 +31,8 @@ add_executable(shadow_simulator
   ${CMAKE_SOURCE_DIR}/common/sample_PointGrid.cpp
   ${CMAKE_SOURCE_DIR}/common/Model.h  
   ${CMAKE_SOURCE_DIR}/common/Model.cpp  
+  ${CMAKE_SOURCE_DIR}/common/read_solar.h
+  ${CMAKE_SOURCE_DIR}/common/read_solar.cpp
   main.cpp
   )
 

@@ -26,7 +26,9 @@
 #include <cstdlib>
 #include <ctime>
 #include "sample_pointGrid.h"
+#include <filesystem>
 
+#include "read_solar.h"
 /*! \namespace osc - Optix Siggraph Course */
 namespace osc {
 
@@ -35,18 +37,57 @@ namespace osc {
     world, then exit */
   extern "C" int main(int ac, char **av)
   {
+
     try {
-      Model *model = loadCityJSON(
-#ifdef _WIN32
-      // on windows, visual studio creates _two_ levels of build dir
-      // (x86/Release)
-      "../../models/delft.city.json"
-#else
-      // on linux, common practice is to have ONE level of build dir
-      // (say, <project>/build/)...
-      "../models/sponza.obj"
-#endif
-                             );
+
+
+      try {
+        std::filesystem::current_path(PROJECT_ROOT); // Set the current working directory
+        std::cout << "Current working directory changed to: " << std::filesystem::current_path() << std::endl;
+      } catch(const std::filesystem::filesystem_error& e) {
+            std::cerr << "Error when changing current directory: " << e.what() << std::endl;}
+
+    json CFG;
+    if (std::filesystem::exists("config.json")) {
+        std::cout << "Config file exists." << std::endl;
+        CFG = readConfig("config.json");
+    }
+    else {
+          throw std::runtime_error("Config file does not exist.");}
+
+    std::filesystem::path root_folder = CFG["study_area"]["data_root"];
+    std::filesystem::path target_tiles = root_folder / "citymodel" /"target_tiles";
+    std::filesystem::path solar_position_path = root_folder / CFG["output_folder_name"] 
+                                        / "intermediate" /"sun_pos.csv";
+
+    std::cout<<"Reading city model"<<std::endl;
+
+    Model* model = nullptr;
+    int entry_count = 0;
+
+    std::filesystem::directory_iterator dir_iter(target_tiles);
+
+    if (dir_iter == std::filesystem::directory_iterator()) {
+        std::cerr << "The directory: "<< target_tiles<<" is empty or does not exist." << std::endl;
+    } else {
+        // 读取第一个 entry
+        const auto& first_entry = *dir_iter;
+        if (first_entry.is_regular_file()) {
+            model = loadCityJSON(first_entry.path().string());
+            std::cout<<"Model loaded"<<std::endl;
+            if (model == nullptr) {
+                std::cerr << "Failed to load: " <<first_entry.path().string() <<std::endl;
+            }
+        } else {
+            std::cerr << first_entry.path().string() << " is not a regular file." << std::endl;
+        }
+        entry_count++;
+
+        ++dir_iter;
+        if (dir_iter != std::filesystem::directory_iterator()) {
+            std::cout << "There is more than one file in this folder, keep only one." << std::endl;
+        }
+    }
 
       model->transformModel();
       SampleRenderer *renderer = new SampleRenderer(model);
@@ -79,8 +120,10 @@ namespace osc {
       const uint32_t last_batch_size = num_samplepoints % batch_size;
       uint32_t num_batches = num_samplepoints / batch_size;
 
+      std::vector<vec3f> directions = readCSVandTransform(solar_position_path.string());
       uint32_t num_directions = 5;
       vec3f* h_directions = new vec3f[num_directions];
+      // vec3f 
       h_directions[0] = vec3f(0.f, 1.f, 0.f);
       h_directions[1] = vec3f(0.f, -1.f, 0.f);
       h_directions[2] = vec3f(1.f, 0.f, 0.f);

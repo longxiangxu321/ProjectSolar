@@ -26,7 +26,7 @@
 #include <cstdlib>
 #include <ctime>
 #include "sample_pointGrid.h"
-
+#include "read_solar.h"
 /*! \namespace osc - Optix Siggraph Course */
 namespace osc {
 
@@ -36,17 +36,65 @@ namespace osc {
   extern "C" int main(int ac, char **av)
   {
     try {
-      Model *model = loadCityJSON(
-#ifdef _WIN32
-      // on windows, visual studio creates _two_ levels of build dir
-      // (x86/Release)
-      "../../models/Delft.city.json"
-#else
-      // on linux, common practice is to have ONE level of build dir
-      // (say, <project>/build/)...
-      "../models/sponza.obj"
-#endif
-                             );
+
+    try {
+        std::filesystem::current_path(PROJECT_ROOT); // Set the current working directory
+        std::cout << "Current working directory changed to: " << std::filesystem::current_path() << std::endl;
+      } catch(const std::filesystem::filesystem_error& e) {
+            std::cerr << "Error when changing current directory: " << e.what() << std::endl;}
+
+    json CFG;
+    if (std::filesystem::exists("./config.json")) {
+        std::cout << "Config file exists." << std::endl;
+        CFG = readConfig("config.json");
+    }
+    else {
+          throw std::runtime_error("Config file does not exist.");}
+
+    std::filesystem::path root_folder = CFG["study_area"]["data_root"];
+    std::filesystem::path target_tiles = root_folder / "citymodel" /"target_tiles";
+    std::filesystem::path solar_position_path = root_folder / CFG["output_folder_name"] 
+                                        / "intermediate" /"sun_pos.csv";
+
+    std::filesystem::path indexFile_path = root_folder / CFG["output_folder_name"] 
+                                         /"index_map.dat";
+    std::filesystem::path azimuthFile_path = root_folder / CFG["output_folder_name"]
+                                          /"azimuth_map.dat";
+    std::filesystem::path elevationFile_path = root_folder / CFG["output_folder_name"]
+                                          /"elevation_map.dat";
+    std::filesystem::path horizonfactorFile_path = root_folder / CFG["output_folder_name"]
+                                          /"horizon_factor_map.dat";
+    std::filesystem::path skyviewfactorFile_path = root_folder / CFG["output_folder_name"]
+                                          /"sky_view_factor_map.dat";
+
+    std::cout<<"Reading city model"<<std::endl;
+
+    Model* model = nullptr;
+    int entry_count = 0;
+
+    std::filesystem::directory_iterator dir_iter(target_tiles);
+
+    if (dir_iter == std::filesystem::directory_iterator()) {
+        std::cerr << "The directory: "<< target_tiles<<" is empty or does not exist." << std::endl;
+    } else {
+        // 读取第一个 entry
+        const auto& first_entry = *dir_iter;
+        if (first_entry.is_regular_file()) {
+            model = loadCityJSON(first_entry.path().string());
+            std::cout<<"Model loaded"<<std::endl;
+            if (model == nullptr) {
+                std::cerr << "Failed to load: " <<first_entry.path().string() <<std::endl;
+            }
+        } else {
+            std::cerr << first_entry.path().string() << " is not a regular file." << std::endl;
+        }
+        entry_count++;
+
+        ++dir_iter;
+        if (dir_iter != std::filesystem::directory_iterator()) {
+            std::cout << "There is more than one file in this folder, keep only one." << std::endl;
+        }
+    }
 
       model->transformModel();
       SampleRenderer *renderer = new SampleRenderer(model);
@@ -70,11 +118,17 @@ namespace osc {
 
       // srand(static_cast<unsigned>(time(0)));
 
-      std::ofstream indexFile("../index_map.dat", std::ios::binary | std::ios::out);
-      std::ofstream azimuthFile("../azimuth_map.dat", std::ios::binary | std::ios::out);
-      std::ofstream elevationFile("../elevation_map.dat", std::ios::binary | std::ios::out);
-      std::ofstream horizonfactorFile("../horizon_factor_map.dat", std::ios::binary | std::ios::out);
-      std::ofstream skyviewfactorFile("../sky_view_factor_map.dat", std::ios::binary | std::ios::out);
+      // std::ofstream indexFile("../index_map.dat", std::ios::binary | std::ios::out);
+      // std::ofstream azimuthFile("../azimuth_map.dat", std::ios::binary | std::ios::out);
+      // std::ofstream elevationFile("../elevation_map.dat", std::ios::binary | std::ios::out);
+      // std::ofstream horizonfactorFile("../horizon_factor_map.dat", std::ios::binary | std::ios::out);
+      // std::ofstream skyviewfactorFile("../sky_view_factor_map.dat", std::ios::binary | std::ios::out);
+      std::ofstream indexFile(indexFile_path, std::ios::binary | std::ios::out);
+      std::ofstream azimuthFile(azimuthFile_path, std::ios::binary | std::ios::out);
+      std::ofstream elevationFile(elevationFile_path, std::ios::binary | std::ios::out);
+      std::ofstream horizonfactorFile(horizonfactorFile_path, std::ios::binary | std::ios::out);
+      std::ofstream skyviewfactorFile(skyviewfactorFile_path, std::ios::binary | std::ios::out);
+
 
       if (!indexFile || !azimuthFile || !elevationFile) {
         std::cerr << "cannot create semantic_map files" << std::endl;
