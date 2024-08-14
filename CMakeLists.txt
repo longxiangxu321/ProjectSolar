@@ -83,6 +83,7 @@ set(optix_LIBRARY "")
 
 # the same rendering example, but in a glfwindow with continuous
 # rendering
+
 add_subdirectory(image_renderer)
 add_subdirectory(obj_viewer)
 add_subdirectory(fisheye_renderer)

@@ -17,20 +17,20 @@
 find_package(OpenGL REQUIRED)
 
 include_directories(${OptiX_INCLUDE})
+include_directories(${CMAKE_SOURCE_DIR}/common)
 
 cuda_compile_and_embed(embedded_ptx_code devicePrograms.cu)
 
 add_executable(shadow_simulator
   ${embedded_ptx_code}
-  optix7.h
   CUDABuffer.h
   LaunchParams.h
   SampleRenderer.h
   SampleRenderer.cpp
-  sample_PointGrid.h
-  sample_PointGrid.cpp
-  Model.h
-  Model.cpp
+  ${CMAKE_SOURCE_DIR}/common/sample_PointGrid.h
+  ${CMAKE_SOURCE_DIR}/common/sample_PointGrid.cpp
+  ${CMAKE_SOURCE_DIR}/common/Model.h  
+  ${CMAKE_SOURCE_DIR}/common/Model.cpp  
   main.cpp
   )
 

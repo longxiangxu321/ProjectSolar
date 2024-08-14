@@ -115,11 +115,11 @@ namespace osc {
   extern "C" int main(int ac, char **av)
   {
     try {
-      Model *model = loadOBJ(
+      Model *model = loadCityJSON(
 #ifdef _WIN32
       // on windows, visual studio creates _two_ levels of build dir
       // (x86/Release)
-      "../../models/sponza.obj"
+      "../../models/delft.city.json"
 #else
       // on linux, common practice is to have ONE level of build dir
       // (say, <project>/build/)...
