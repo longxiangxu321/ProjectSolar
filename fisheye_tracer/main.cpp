@@ -69,6 +69,9 @@ namespace osc {
                                           /"horizon_factor_map.dat";
     std::filesystem::path skyviewfactorFile_path = root_folder / CFG["output_folder_name"]
                                           /"sky_view_factor_map.dat";
+    std::filesystem::path config_backup_path = root_folder / CFG["output_folder_name"]
+                                            /"config.json";
+    
     const int batch_size = 2500;
     const int azimuth_resolution = CFG["azimuth_resolution"];
     const int elevation_resolution = CFG["elevation_resolution"];
@@ -233,7 +236,18 @@ namespace osc {
       renderer->setCameraGroup(last_cameras, last_batch_size, hemisphere_resolution, voxel_resolution);
       renderer->render();
 
-      renderer->print_dimension();
+      voxel_dim voxel_dimension = renderer->print_dimension();
+      CFG["voxel_dim_x"] = voxel_dimension.num_x;
+      CFG["voxel_dim_y"] = voxel_dimension.num_y;
+      CFG["voxel_dim_z"] = voxel_dimension.num_z;
+
+      std::ofstream out_json("config.json");
+      std::ofstream out_backup_json(config_backup_path);
+      out_json << std::setw(4) << CFG << std::endl;
+      out_backup_json << std::setw(4) << CFG << std::endl;
+
+
+
 
       std::vector<uint32_t> pixels(batch_size*fbSize.x*fbSize.y);
       std::vector<half> incident_azimuth(batch_size*fbSize.x*fbSize.y);

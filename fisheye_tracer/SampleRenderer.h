@@ -33,6 +33,12 @@ namespace osc {
     /*! general up-vector */
     vec3f up;
   };
+
+  struct voxel_dim {
+    int num_x;
+    int num_y;
+    int num_z;
+  };
   
   /*! a sample OptiX-7 renderer that demonstrates how to set up
       context, module, programs, pipeline, SBT, etc, and perform a
@@ -70,7 +76,7 @@ namespace osc {
     
     void setCameraGroup(const Camera* cameras, const int numCameras, const vec2i &hemisphere_resolution, const float resolution = 2, 
                       const float horizon_angle_threshold = M_PI/36, const int horizon_gamma = 50);
-    void print_dimension();
+    voxel_dim print_dimension();
 
 
   protected:

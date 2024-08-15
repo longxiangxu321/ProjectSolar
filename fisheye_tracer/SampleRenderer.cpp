@@ -699,7 +699,7 @@ namespace osc {
   }
 
 
-  void SampleRenderer::print_dimension()
+  voxel_dim SampleRenderer::print_dimension()
   {
     std::cout<<"bbox_min: "<<launchParams.bbox_min<<std::endl;
     std::cout<<"bbox_max: "<<launchParams.bbox_max<<std::endl;
@@ -711,6 +711,9 @@ namespace osc {
 
     std::cout<<"hemisphere resolution x: "<<launchParams.hemisphere_resolution.x<<std::endl;
     std::cout<<"hemisphere resolution y: "<<launchParams.hemisphere_resolution.y<<std::endl;
+
+    voxel_dim dim = {launchParams.voxel_dim.x, launchParams.voxel_dim.y, launchParams.voxel_dim.z};
+    return dim;
   }
   
 } // ::osc
