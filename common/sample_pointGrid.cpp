@@ -147,15 +147,17 @@ void save_point_grid(const std::vector<GridPoint> &grid_n, const vec3f &translat
 }
 
 std::vector<GridPoint> clean_point_grid(const std::vector<GridPoint> &grid_n) {
+    int false_points = 0;
     std::vector<GridPoint> filtered_grid_point;
     for (int i = 0; i < grid_n.size(); i++) {
         if (std::isnan(grid_n[i].position.x) || std::isnan(grid_n[i].position.y) || std::isnan(grid_n[i].position.z)) {
-            std::cout<<"grid point NAN found"<<std::endl;
+            false_points++;
         }
         else {
             filtered_grid_point.push_back(grid_n[i]);
         }
     }
+    std::cout<<"Number of false points deleted: "<<false_points<<std::endl;
     return filtered_grid_point;
 }
 

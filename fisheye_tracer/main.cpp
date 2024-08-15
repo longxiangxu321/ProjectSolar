@@ -55,6 +55,9 @@ namespace osc {
     std::filesystem::path target_tiles = root_folder / "citymodel" /"target_tiles";
     std::filesystem::path solar_position_path = root_folder / CFG["output_folder_name"] 
                                         / "intermediate" /"sun_pos.csv";
+    
+    std::filesystem::path point_grid_path = root_folder / CFG["output_folder_name"] 
+                                        / "intermediate" /"point_grid.dat";
 
     std::filesystem::path indexFile_path = root_folder / CFG["output_folder_name"] 
                                          /"index_map.dat";
@@ -66,6 +69,11 @@ namespace osc {
                                           /"horizon_factor_map.dat";
     std::filesystem::path skyviewfactorFile_path = root_folder / CFG["output_folder_name"]
                                           /"sky_view_factor_map.dat";
+    const int batch_size = 2500;
+    const int azimuth_resolution = CFG["azimuth_resolution"];
+    const int elevation_resolution = CFG["elevation_resolution"];
+    const vec2i hemisphere_resolution = vec2i(azimuth_resolution,elevation_resolution);
+    const int voxel_resolution = CFG["voxel_resolution"];
 
     std::cout<<"Reading city model"<<std::endl;
 
@@ -75,24 +83,32 @@ namespace osc {
     std::filesystem::directory_iterator dir_iter(target_tiles);
 
     if (dir_iter == std::filesystem::directory_iterator()) {
-        std::cerr << "The directory: "<< target_tiles<<" is empty or does not exist." << std::endl;
+        std::cerr <<GDT_TERMINAL_RED<< "The directory: "<< target_tiles
+        <<" is empty or does not exist." <<GDT_TERMINAL_DEFAULT <<std::endl;
+        return 1;
     } else {
         // 读取第一个 entry
         const auto& first_entry = *dir_iter;
         if (first_entry.is_regular_file()) {
-            model = loadCityJSON(first_entry.path().string());
-            std::cout<<"Model loaded"<<std::endl;
+            model = loadWeatherStation(first_entry.path().string());
+            std::cout<<GDT_TERMINAL_GREEN<<"Model loaded"<<GDT_TERMINAL_DEFAULT<<std::endl;
+
+            
             if (model == nullptr) {
-                std::cerr << "Failed to load: " <<first_entry.path().string() <<std::endl;
+                std::cerr<<GDT_TERMINAL_RED << "Failed to load: " <<
+                first_entry.path().string() << GDT_TERMINAL_DEFAULT<<std::endl;
             }
         } else {
             std::cerr << first_entry.path().string() << " is not a regular file." << std::endl;
+            return 1;
         }
         entry_count++;
 
         ++dir_iter;
         if (dir_iter != std::filesystem::directory_iterator()) {
-            std::cout << "There is more than one file in this folder, keep only one." << std::endl;
+            std::cerr<< GDT_TERMINAL_RED<< "There is more than one file in this folder, keep only one." 
+            <<GDT_TERMINAL_DEFAULT<< std::endl;
+            return 1;
         }
     }
 
@@ -108,10 +124,12 @@ namespace osc {
       std::cout<<"Grid points created: "<< gridpoints.size()<<std::endl;
 
       vec3f translation = model->bounds.center() - model->original_center;
-      save_point_grid(gridpoints, translation, "../grid_points.dat");
+      save_point_grid(gridpoints, translation, point_grid_path.string());
       std::cout<<"Grid points saved"<<std::endl;
 
-      const vec2i fbSize(vec2i(360,90));
+      // const vec2i fbSize(vec2i(360/azimuth_resolution,90/elevation_resolution));
+      vec2i fbSize = vec2i(360/azimuth_resolution, 90/elevation_resolution);
+      std::cout<<GDT_TERMINAL_YELLOW<<"Frame buffer size: "<<fbSize.x<<" "<<fbSize.y<<GDT_TERMINAL_DEFAULT<<std::endl;
 
       auto start = std::chrono::high_resolution_clock::now();
 
@@ -137,10 +155,10 @@ namespace osc {
 
 
       uint32_t num_samplepoints = gridpoints.size();
-      const uint32_t batch_size = 2500;
+      
       const uint32_t last_batch_size = num_samplepoints % batch_size;
       uint32_t num_batches = num_samplepoints / batch_size;
-      vec2i hemisphere_resolution = vec2i(1,1);
+      
       
       // vec2i spliting = vec2i(360, 90);
 
@@ -171,7 +189,7 @@ namespace osc {
           }
           point_id++;
         }
-        renderer->setCameraGroup(cameras, batch_size, hemisphere_resolution);
+        renderer->setCameraGroup(cameras, batch_size, hemisphere_resolution, voxel_resolution);
         renderer->render();
         std::vector<uint32_t> pixels(batch_size*fbSize.x*fbSize.y);
         std::vector<half> incident_azimuth(batch_size*fbSize.x*fbSize.y);
@@ -212,7 +230,7 @@ namespace osc {
         }
         point_id++;
       }
-      renderer->setCameraGroup(last_cameras, last_batch_size, hemisphere_resolution, batch_offset);
+      renderer->setCameraGroup(last_cameras, last_batch_size, hemisphere_resolution, voxel_resolution);
       renderer->render();
 
       renderer->print_dimension();

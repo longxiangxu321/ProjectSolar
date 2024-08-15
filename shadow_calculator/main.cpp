@@ -59,6 +59,13 @@ namespace osc {
     std::filesystem::path target_tiles = root_folder / "citymodel" /"target_tiles";
     std::filesystem::path solar_position_path = root_folder / CFG["output_folder_name"] 
                                         / "intermediate" /"sun_pos.csv";
+    std::filesystem::path point_grid_path = root_folder / CFG["output_folder_name"] 
+                                        / "intermediate" /"point_grid.dat";
+
+    std::filesystem::path shadow_result_path = root_folder / CFG["output_folder_name"] 
+                                        /"shadow_map.dat";
+
+    const int batch_size = 2500;
 
     std::cout<<"Reading city model"<<std::endl;
 
@@ -68,24 +75,32 @@ namespace osc {
     std::filesystem::directory_iterator dir_iter(target_tiles);
 
     if (dir_iter == std::filesystem::directory_iterator()) {
-        std::cerr << "The directory: "<< target_tiles<<" is empty or does not exist." << std::endl;
+        std::cerr <<GDT_TERMINAL_RED<< "The directory: "<< target_tiles
+        <<" is empty or does not exist." <<GDT_TERMINAL_DEFAULT <<std::endl;
+        return 1;
     } else {
         // 读取第一个 entry
         const auto& first_entry = *dir_iter;
         if (first_entry.is_regular_file()) {
-            model = loadCityJSON(first_entry.path().string());
-            std::cout<<"Model loaded"<<std::endl;
+            model = loadWeatherStation(first_entry.path().string());
+            std::cout<<GDT_TERMINAL_GREEN<<"Model loaded"<<GDT_TERMINAL_DEFAULT<<std::endl;
+
+            
             if (model == nullptr) {
-                std::cerr << "Failed to load: " <<first_entry.path().string() <<std::endl;
+                std::cerr<<GDT_TERMINAL_RED << "Failed to load: " <<
+                first_entry.path().string() << GDT_TERMINAL_DEFAULT<<std::endl;
             }
         } else {
             std::cerr << first_entry.path().string() << " is not a regular file." << std::endl;
+            return 1;
         }
         entry_count++;
 
         ++dir_iter;
         if (dir_iter != std::filesystem::directory_iterator()) {
-            std::cout << "There is more than one file in this folder, keep only one." << std::endl;
+            std::cerr<< GDT_TERMINAL_RED<< "There is more than one file in this folder, keep only one." 
+            <<GDT_TERMINAL_DEFAULT<< std::endl;
+            return 1;
         }
     }
 
@@ -93,21 +108,24 @@ namespace osc {
       SampleRenderer *renderer = new SampleRenderer(model);
 
       float sampling_density = 16;
-      // std::filesystem::path output_path = "../grid.xyz";
 
-      std::vector<GridPoint> gridpoints= create_point_grid(*model);
+      // std::vector<GridPoint> gridpoints= create_point_grid(*model);
+      std::vector<GridPoint> raw_gridpoints= create_point_grid(*model);
+      std::vector<GridPoint> gridpoints = clean_point_grid(raw_gridpoints);
       
       std::cout<<"Grid points created: "<< gridpoints.size()<<std::endl;
 
       vec3f translation = model->bounds.center() - model->original_center;
-      save_point_grid(gridpoints, translation, "../grid_points.dat");
+
+      save_point_grid(gridpoints, translation, point_grid_path.string());
+      std::cout<<"Grid points saved"<<std::endl;
 
       auto start = std::chrono::high_resolution_clock::now();
 
 
       // srand(static_cast<unsigned>(time(0)));
 
-      std::ofstream shadowFile("../shadow_map.dat", std::ios::binary | std::ios::out);
+      std::ofstream shadowFile(shadow_result_path, std::ios::binary | std::ios::out);
 
       if (!shadowFile) {
         std::cerr << "cannot create shadow_map" << std::endl;
@@ -116,19 +134,22 @@ namespace osc {
 
 
       uint32_t num_samplepoints = gridpoints.size();
-      const uint32_t batch_size = 2500;
+      // const uint32_t batch_size = 2500;
       const uint32_t last_batch_size = num_samplepoints % batch_size;
       uint32_t num_batches = num_samplepoints / batch_size;
 
       std::vector<vec3f> directions = readCSVandTransform(solar_position_path.string());
-      uint32_t num_directions = 5;
+      uint32_t num_directions = directions.size();
       vec3f* h_directions = new vec3f[num_directions];
       // vec3f 
-      h_directions[0] = vec3f(0.f, 1.f, 0.f);
-      h_directions[1] = vec3f(0.f, -1.f, 0.f);
-      h_directions[2] = vec3f(1.f, 0.f, 0.f);
-      h_directions[3] = vec3f(-1.f, 0.f, 0.f);
-      h_directions[4] = vec3f(0.f, 0.f, 1.f);
+      // h_directions[0] = vec3f(0.f, 1.f, 0.f);
+      // h_directions[1] = vec3f(0.f, -1.f, 0.f);
+      // h_directions[2] = vec3f(1.f, 0.f, 0.f);
+      // h_directions[3] = vec3f(-1.f, 0.f, 0.f);
+      // h_directions[4] = vec3f(0.f, 0.f, 1.f);
+      for (uint32_t i = 0; i < num_directions; i++) {
+        h_directions[i] = normalize(h_directions[i]);
+      }
 
       std::cout<<"Rendering with batch size "<<batch_size<<std::endl;
       std::cout <<"Total number of batches: "<<num_batches<<std::endl;

@@ -5,11 +5,14 @@
         "long": 6.567723598534742,
         "start_time": "2023-01-01 00:00:00",
         "end_time": "2023-01-02 00:00:00",
-        "data_root": "./data/Delft",
-        "frequency": "h",
-        "lod": 2.2
+        "data_root": "./data/Heino",
+        "frequency": "h"
     },
-    "output_folder_name": "output_20240814_211054",
+    "voxel_resolution" : 2,
+    "azimuth_resolution":2,
+    "elevation_resolution":2,
+    "output_folder_name": "output_20240815_113456",
     "irradiance_model": "isotropic",
     "epw_file": null
+
 }

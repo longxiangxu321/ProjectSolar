@@ -8,6 +8,7 @@ namespace osc {
     surface_type_map["WallSurface"] = 0;
     surface_type_map["RoofSurface"] = 1;
     surface_type_map["GroundSurface"] = 2;
+    surface_type_map["TIN"] = 3;
     return surface_type_map;
     }
 
@@ -309,6 +310,7 @@ namespace osc {
 
         int building_index = 0;
         int total_triangles = 0;
+        int TIN_index = 0;
 
         TriangleMesh *mesh = nullptr;
         std::map<int, int> vertexMap;
@@ -384,7 +386,7 @@ namespace osc {
                 
                 
                 mesh->diffuse = gdt::randomColor(building_index);
-                building_index++;
+
                 
                 assert(mesh->vertex.size() == vertexMap.size());
                 assert(mesh->index.size() == mesh->normal.size());
@@ -393,11 +395,96 @@ namespace osc {
                 
                 if (mesh->vertex.size() > 0 && mesh->index.size() > 0){
                     model->meshes.push_back(mesh);
+                    building_index++;
                 }   else {
-                    std::cout<<"Empty mesh, deleting"<< building_index <<std::endl;
+                    std::cout<<"Empty mesh, deleting building"<< building_index <<std::endl;
                     delete mesh;
                 }
             }
+
+            else if (co.value()["type"] == "TINRelief") {
+                vertexMap.clear();
+                mesh = new TriangleMesh;
+                for (auto &g: co.value()["geometry"]) {
+                    if (g["lod"] != "1") {
+                            continue;
+                    }
+                    else {
+                    for (int i = 0; i< g["boundaries"].size(); i++) {
+                        std::vector<std::vector<int>> triangle = g["boundaries"][i];
+                        if (triangle[0].size() != 3 || 
+                            triangle[0][0]==triangle[0][1] || 
+                            triangle[0][0]==triangle[0][2] || 
+                            triangle[0][1]==triangle[0][2])
+                        {
+                            int gmlid_int = g["semantics"]["surfaces"][i]["global_idx"];
+
+                            std::cout<<"a triangle is not valid, identifier: "<<gmlid_int<<std::endl;
+                            continue;
+                        }  
+                        else {
+                                int gmlid_int = g["semantics"]["surfaces"][i]["global_idx"];
+                                int global_v0 = triangle[0][0];
+                                int global_v1 = triangle[0][1];
+                                int global_v2 = triangle[0][2];
+
+                                int original_size = vertexMap.size();
+
+                                int local_v0 = addOrGetVertexIndex(vertexMap, global_v0);
+
+                                if (original_size != vertexMap.size()) {
+                                    mesh->vertex.push_back(lspts[global_v0]);
+                                }
+
+                                original_size = vertexMap.size();
+                                int local_v1 = addOrGetVertexIndex(vertexMap, global_v1);
+                                if (original_size != vertexMap.size()) {
+                                    mesh->vertex.push_back(lspts[global_v1]);
+                                }
+
+                                original_size = vertexMap.size();
+                                int local_v2 = addOrGetVertexIndex(vertexMap, global_v2);
+                                if (original_size != vertexMap.size()) {
+                                    mesh->vertex.push_back(lspts[global_v2]);
+                                }
+                                // std::cout<<"local_v0: "<<local_v0<<" local_v1: "<<local_v1<<" local_v2: "<<local_v2<<std::endl;
+
+                                mesh->index.push_back(vec3i(local_v0, local_v1, local_v2));
+                                vec3f vx = lspts[global_v0];
+                                vec3f vy = lspts[global_v1];
+                                vec3f vz = lspts[global_v2];
+                                vec3f normal = normalize(cross(vy - vx, vz - vx));
+                                mesh->normal.push_back(normal);
+                                mesh->globalID.push_back(gmlid_int);
+                                std::string type = "TIN";
+                                int surface_type_id = surface_type_map[type];
+                                mesh->surfaceType.push_back(surface_type_id);
+                                total_triangles++;
+                        }                
+                    }
+                    }
+                    
+                }
+                
+                mesh->diffuse = gdt::randomColor(building_index);
+ 
+                
+                assert(mesh->vertex.size() == vertexMap.size());
+                assert(mesh->index.size() == mesh->normal.size());
+                assert(mesh->index.size() == mesh->globalID.size());
+
+                
+                if (mesh->vertex.size() > 0 && mesh->index.size() > 0){
+                    model->meshes.push_back(mesh);
+                    TIN_index++;
+                }   else {
+                    std::cout<<"Empty mesh, deleting TIN terrain"<< building_index <<std::endl;
+                    delete mesh;
+                }
+                
+            }
+
+
 
         }
 
@@ -406,6 +493,7 @@ namespace osc {
         std::cout<<"bouding box low "<<model->bounds.lower.x<<" "<<model->bounds.lower.y<<" "<<model->bounds.lower.z<<std::endl;
         std::cout<<"bouding box high "<<model->bounds.upper.x<<" "<<model->bounds.upper.y<<" "<<model->bounds.upper.z<<std::endl;
         std::cout<<"Total building num " << building_index<<std::endl;
+        std::cout<<"Total TIN num " << TIN_index<<std::endl;
         std::cout<<"Total triangle num " << total_triangles<<std::endl;
         std::cout<<"Total vertex num " << lspts.size()<<std::endl;
         model->original_center = model->bounds.center();
