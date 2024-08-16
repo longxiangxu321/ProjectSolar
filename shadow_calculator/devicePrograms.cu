@@ -31,7 +31,7 @@ namespace osc {
   enum { SURFACE_RAY_TYPE=0, RAY_TYPE_COUNT };
   
   struct PRD {
-    bool hit;
+    bool not_hit;
   };
 
   static __forceinline__ __device__
@@ -81,7 +81,7 @@ namespace osc {
   extern "C" __global__ void __anyhit__radiance()
   { /*! for this simple example, this will remain empty */ 
     PRD &prd = *(PRD*)getPRD<PRD>();
-    prd.hit = true;
+    prd.not_hit = false;
   }
   
   //------------------------------------------------------------------------------
@@ -99,7 +99,7 @@ namespace osc {
     // prd = vec3f(1.f);
     PRD &prd = *(PRD*)getPRD<PRD>();
     
-    prd.hit = false;
+    prd.not_hit = true;
 
   }
 
@@ -139,10 +139,10 @@ namespace osc {
                u0, u1 );
 
 
-    const bool hit = pixelColorPRD.hit;
+    const bool not_hit = pixelColorPRD.not_hit;
 
     const uint32_t fbIndex = dir_id + cam_id * optixLaunchParams.n_directions;
-    optixLaunchParams.shadowBuffer[fbIndex] = hit;
+    optixLaunchParams.shadowBuffer[fbIndex] = not_hit;
   }
   
 } // ::osc

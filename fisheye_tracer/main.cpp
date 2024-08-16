@@ -171,7 +171,7 @@ namespace osc {
       std::cout<<"Rendering with batch size "<<batch_size<<std::endl;
       std::cout <<"Total number of batches: "<<num_batches<<std::endl;
       int batch_offset = 0;
-      for (uint32_t i = 0; i < num_batches - 1; i++) {
+      for (uint32_t i = 0; i < num_batches; i++) {
         if (i % 10 == 0) {
           std::cout<<GDT_TERMINAL_GREEN<<"Rendering batch "<<i<<" to "<< i+10 <<std::endl;
         }
@@ -215,7 +215,7 @@ namespace osc {
         batch_offset += batch_size;
       }
       
-
+      if (last_batch_size > 0) {
       std::cout<<GDT_TERMINAL_GREEN<<"Rendering last batch with size: "<<last_batch_size<<GDT_TERMINAL_DEFAULT<<std::endl;
       
       Camera* last_cameras = new Camera[last_batch_size];
@@ -236,24 +236,11 @@ namespace osc {
       renderer->setCameraGroup(last_cameras, last_batch_size, hemisphere_resolution, voxel_resolution);
       renderer->render();
 
-      voxel_dim voxel_dimension = renderer->print_dimension();
-      CFG["voxel_dim_x"] = voxel_dimension.num_x;
-      CFG["voxel_dim_y"] = voxel_dimension.num_y;
-      CFG["voxel_dim_z"] = voxel_dimension.num_z;
-
-      std::ofstream out_json("config.json");
-      std::ofstream out_backup_json(config_backup_path);
-      out_json << std::setw(4) << CFG << std::endl;
-      out_backup_json << std::setw(4) << CFG << std::endl;
-
-
-
-
-      std::vector<uint32_t> pixels(batch_size*fbSize.x*fbSize.y);
-      std::vector<half> incident_azimuth(batch_size*fbSize.x*fbSize.y);
-      std::vector<half> incident_elevation(batch_size*fbSize.x*fbSize.y);
-      std::vector<float> horizon_factor(batch_size);
-      std::vector<int> sky_view_factor(batch_size);
+      std::vector<uint32_t> pixels(last_batch_size*fbSize.x*fbSize.y);
+      std::vector<half> incident_azimuth(last_batch_size*fbSize.x*fbSize.y);
+      std::vector<half> incident_elevation(last_batch_size*fbSize.x*fbSize.y);
+      std::vector<float> horizon_factor(last_batch_size);
+      std::vector<int> sky_view_factor(last_batch_size);
 
 
       renderer->downloadPixels(pixels.data());
@@ -266,6 +253,10 @@ namespace osc {
       elevationFile.write(reinterpret_cast<const char*>(incident_elevation.data()), incident_elevation.size() * sizeof(half));
       horizonfactorFile.write(reinterpret_cast<const char*>(horizon_factor.data()), horizon_factor.size() * sizeof(float));
       skyviewfactorFile.write(reinterpret_cast<const char*>(sky_view_factor.data()), sky_view_factor.size() * sizeof(int));
+      delete[] last_cameras;
+      }  
+
+
 
       indexFile.close();
       azimuthFile.close();
@@ -275,7 +266,18 @@ namespace osc {
 
       std::cout<<"Finito"<<std::endl;
 
-      delete[] last_cameras;
+      
+
+      voxel_dim voxel_dimension = renderer->print_dimension();
+      CFG["voxel_dim_x"] = voxel_dimension.num_x;
+      CFG["voxel_dim_y"] = voxel_dimension.num_y;
+      CFG["voxel_dim_z"] = voxel_dimension.num_z;
+
+      std::ofstream out_json("config.json");
+      std::ofstream out_backup_json(config_backup_path);
+      out_json << std::setw(4) << CFG << std::endl;
+      out_backup_json << std::setw(4) << CFG << std::endl;
+
       
 
 

@@ -141,19 +141,17 @@ namespace osc {
       std::vector<vec3f> directions = readCSVandTransform(solar_position_path.string());
       uint32_t num_directions = directions.size();
       vec3f* h_directions = new vec3f[num_directions];
-      // vec3f 
-      // h_directions[0] = vec3f(0.f, 1.f, 0.f);
-      // h_directions[1] = vec3f(0.f, -1.f, 0.f);
-      // h_directions[2] = vec3f(1.f, 0.f, 0.f);
-      // h_directions[3] = vec3f(-1.f, 0.f, 0.f);
-      // h_directions[4] = vec3f(0.f, 0.f, 1.f);
+
       for (uint32_t i = 0; i < num_directions; i++) {
-        h_directions[i] = normalize(h_directions[i]);
+        h_directions[i] = normalize(directions[i]);
+        // std::cout<<h_directions[i]<<std::endl;
       }
+
+      std::cout<<"Number directions: "<<num_directions<<std::endl;
 
       std::cout<<"Rendering with batch size "<<batch_size<<std::endl;
       std::cout <<"Total number of batches: "<<num_batches<<std::endl;
-      for (uint32_t i = 0; i < num_batches - 1; i++) {
+      for (uint32_t i = 0; i < num_batches; i++) {
         if (i % 10 == 0) {
           std::cout<<GDT_TERMINAL_GREEN<<"Rendering batch "<<i<<" to "<< i+10 <<std::endl;
         }
@@ -177,6 +175,7 @@ namespace osc {
         delete[] pixels;
       }
       
+      if (last_batch_size > 0) {
 
       std::cout<<GDT_TERMINAL_GREEN<<"Rendering last batch with size: "<<last_batch_size<<GDT_TERMINAL_DEFAULT<<std::endl;
       
@@ -189,21 +188,29 @@ namespace osc {
         Camera cam = {position, direction};
         last_cameras[j] = cam;
       }
+
       renderer->setCameraGroup(last_cameras, last_batch_size, h_directions, num_directions);
       renderer->render();
 
-      bool* pixels = new bool[batch_size*num_directions];
+      bool* pixels = new bool[last_batch_size*num_directions];
+
       renderer->downloadShadowBuffer(pixels);
 
       shadowFile.write(reinterpret_cast<const char*>(pixels), last_batch_size*num_directions * sizeof(bool));
-      shadowFile.close();
 
-      std::cout<<"Finito"<<std::endl;
       delete[] pixels;
       delete[] last_cameras;
+        
+      }
+
+      shadowFile.close();
+
       
 
 
+      
+
+      std::cout<<"Finito"<<std::endl;
       auto end = std::chrono::high_resolution_clock::now();
 
       std::chrono::duration<double, std::milli> elapsed = end - start; // 计算经过的毫秒数
