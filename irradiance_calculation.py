@@ -5,6 +5,7 @@ import pandas as pd
 from line_profiler import LineProfiler
 import json
 import os
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 
 
@@ -84,53 +85,60 @@ def pd_integrate_voxel_info(point_grid, irradiance_vals, voxel_dim, voxel_size=2
     return df
 
 
+
+
+def process_batch(batch_start, batch_end, num_samples, point_grid, voxel_grid, irradiance_shape, shared_index_map_name, shared_azimuth_map_name, shared_elevation_map_name, shared_shape):
+    # 通过共享内存加载数据
+    existing_index_map = np.memmap(shared_index_map_name, dtype=np.uint32, mode='r', shape=shared_shape)
+    existing_azimuth_map = np.memmap(shared_azimuth_map_name, dtype=np.float16, mode='r', shape=shared_shape)
+    existing_elevation_map = np.memmap(shared_elevation_map_name, dtype=np.float16, mode='r', shape=shared_shape)
+
+    azimuth_valid = existing_azimuth_map[batch_start*num_samples:batch_end*num_samples]
+    elevation_valid = existing_elevation_map[batch_start*num_samples:batch_end*num_samples]
+    voxel_indexes = existing_index_map[batch_start*num_samples:batch_end*num_samples]
+
+    relevant_voxels = voxel_grid.reindex(voxel_indexes, fill_value=0.0)
+    relevant_voxels['irradiance'] = relevant_voxels['irradiance'].apply(
+        lambda x: np.zeros(irradiance_shape[1]) if isinstance(x, float) else x
+    )
+
+    pixels_irradiance = np.vstack(relevant_voxels['irradiance'].values)
+
+    x_mask = np.where((np.cos(elevation_valid) * np.cos(azimuth_valid)) > 0, relevant_voxels['right_intensity'].values, relevant_voxels['left_intensity'].values)
+    y_mask = np.where((np.cos(elevation_valid) * np.sin(azimuth_valid)) > 0, relevant_voxels['back_intensity'].values, relevant_voxels['front_intensity'].values)
+    z_mask = np.where((np.sin(elevation_valid)) > 0, relevant_voxels['up_intensity'].values, relevant_voxels['down_intensity'].values)
+
+    contributions_raw = x_mask + y_mask + z_mask
+    contributions = np.repeat(contributions_raw[:, np.newaxis], irradiance_shape[1], axis=1)
+    
+    return np.sum(contributions * pixels_irradiance / num_samples * 0.1, axis=0), batch_start, batch_end
+
 def batch_update_grid_point_irradiance(point_grid, voxel_grid, irradiance, index_map, azimuth_map, elevation_map, num_samples):
-    """
-    update the irradiance values for each point in the point grid.
-    point_grid: np.array, shape=(N, 6), dtype=float32, the point cloud data with normal vectors.
-    voxel_grid: pd.DataFrame, the voxel grid data.
-    irradiance: np.array, shape=(N, M), dtype=float32, the irradiance values for each point.
-    index_map: np.array, shape=(N*num_samples), dtype=int32, the voxel index for each point.
-    azimuth_map: np.array, shape=(N*num_samples), dtype=float32, the azimuth angle for each point.
-    elevation_map: np.array, shape=(N*num_samples), dtype=float32, the elevation angle for each point.
-    num_samples: int, the number of samples for each point.
-    """
     num_points = point_grid.shape[0]
-    updated_irradiance = irradiance.copy()
+    updated_irradiance = np.zeros_like(irradiance)
 
-    batch_size = 1000
-    for i in tqdm(range(0, num_points, batch_size), desc="Processing points"):
-        batch_start = i
-        batch_end = min(i + batch_size, num_points)
+    # num_points = 10000
+    batch_size = 1500
 
-        azimuth_valid = azimuth_map[batch_start*num_samples:batch_end*num_samples]
-        elevation_valid = elevation_map[batch_start*num_samples:batch_end*num_samples]
+    index_map_shape = index_map.shape
 
+    with ProcessPoolExecutor() as executor:
+        futures = []
+        for i in range(0, num_points, batch_size):
+            batch_start = i
+            batch_end = min(i + batch_size, num_points)
+            futures.append(
+                executor.submit(process_batch, batch_start, batch_end, num_samples, point_grid, voxel_grid, irradiance.shape, index_map.filename, azimuth_map.filename, elevation_map.filename, index_map_shape)
+            )
 
-        voxel_indexes = index_map[batch_start*num_samples:batch_end*num_samples]
-        relevant_voxels = voxel_grid.reindex(voxel_indexes, fill_value=0.0)
-        
-        relevant_voxels['irradiance'] = relevant_voxels['irradiance'].apply(
-            lambda x: np.zeros(irradiance.shape[1]) if isinstance(x, float) else x
-        )
-
-        
-        pixels_irradiance = np.stack(relevant_voxels['irradiance'].values)
-        
-        
-
-        x_mask = np.where((np.cos(elevation_valid) * np.cos(azimuth_valid)) > 0, relevant_voxels['right_intensity'].values, relevant_voxels['left_intensity'].values)
-        y_mask = np.where((np.cos(elevation_valid) * np.sin(azimuth_valid)) > 0, relevant_voxels['back_intensity'].values, relevant_voxels['front_intensity'].values)
-        z_mask = np.where((np.sin(elevation_valid)) > 0, relevant_voxels['up_intensity'].values, relevant_voxels['down_intensity'].values)
-        
-        contributions_raw = x_mask + y_mask + z_mask
-        contributions = np.repeat(contributions_raw[:, np.newaxis], irradiance.shape[1], axis=1)
-        updated_irradiance[batch_start:batch_end] += np.sum(contributions * pixels_irradiance/num_samples * 0.1)
-        
-        # breakpoint()
-        
+        for future in tqdm(as_completed(futures), total=len(futures), desc="Processing points"):
+            result, batch_start, batch_end = future.result()
+            updated_irradiance[batch_start:batch_end] += result
 
     return updated_irradiance
+
+
+
 
 def calculate_isotropic(point_grid, shadow_map, svf_map, weather_data, solar_position):
     """
