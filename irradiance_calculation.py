@@ -6,6 +6,7 @@ from line_profiler import LineProfiler
 import json
 import os
 from concurrent.futures import ProcessPoolExecutor, as_completed
+import pvlib
 
 
 
@@ -87,11 +88,11 @@ def pd_integrate_voxel_info(point_grid, irradiance_vals, voxel_dim, voxel_size=2
 
 
 
-def process_batch(batch_start, batch_end, num_samples, point_grid, voxel_grid, irradiance_shape, shared_index_map_name, shared_azimuth_map_name, shared_elevation_map_name, shared_shape):
+def process_batch(batch_start, batch_end, num_samples, voxel_grid, num_timestep, shared_index_map_name, shared_azimuth_map_name, shared_elevation_map_name, albedo):
     # 通过共享内存加载数据
-    existing_index_map = np.memmap(shared_index_map_name, dtype=np.uint32, mode='r', shape=shared_shape)
-    existing_azimuth_map = np.memmap(shared_azimuth_map_name, dtype=np.float16, mode='r', shape=shared_shape)
-    existing_elevation_map = np.memmap(shared_elevation_map_name, dtype=np.float16, mode='r', shape=shared_shape)
+    existing_index_map = np.memmap(shared_index_map_name, dtype=np.uint32, mode='r')
+    existing_azimuth_map = np.memmap(shared_azimuth_map_name, dtype=np.float16, mode='r')
+    existing_elevation_map = np.memmap(shared_elevation_map_name, dtype=np.float16, mode='r')
 
     azimuth_valid = existing_azimuth_map[batch_start*num_samples:batch_end*num_samples]
     elevation_valid = existing_elevation_map[batch_start*num_samples:batch_end*num_samples]
@@ -99,7 +100,7 @@ def process_batch(batch_start, batch_end, num_samples, point_grid, voxel_grid, i
 
     relevant_voxels = voxel_grid.reindex(voxel_indexes, fill_value=0.0)
     relevant_voxels['irradiance'] = relevant_voxels['irradiance'].apply(
-        lambda x: np.zeros(irradiance_shape[1]) if isinstance(x, float) else x
+        lambda x: np.zeros(num_timestep) if isinstance(x, float) else x
     )
 
     pixels_irradiance = np.vstack(relevant_voxels['irradiance'].values)
@@ -109,16 +110,18 @@ def process_batch(batch_start, batch_end, num_samples, point_grid, voxel_grid, i
     z_mask = np.where((np.sin(elevation_valid)) > 0, relevant_voxels['up_intensity'].values, relevant_voxels['down_intensity'].values)
 
     contributions_raw = x_mask + y_mask + z_mask
-    contributions = np.repeat(contributions_raw[:, np.newaxis], irradiance_shape[1], axis=1)
+    contributions = np.repeat(contributions_raw[:, np.newaxis], num_timestep, axis=1)
     
-    return np.sum(contributions * pixels_irradiance / num_samples * 0.1, axis=0), batch_start, batch_end
+    return np.sum(albedo * contributions * pixels_irradiance / num_samples , axis=0), batch_start, batch_end
 
-def batch_update_grid_point_irradiance(point_grid, voxel_grid, irradiance, index_map, azimuth_map, elevation_map, num_samples):
+def batch_update_grid_point_irradiance(point_grid, voxel_grid, irradiance, index_map, azimuth_map, elevation_map, num_samples, batch_size, my_albedo):
     num_points = point_grid.shape[0]
     updated_irradiance = np.zeros_like(irradiance)
+    num_time_steps = irradiance.shape[1]
 
     # num_points = 10000
-    batch_size = 1500
+    # batch_size = 1500
+    # my_albedo
 
     index_map_shape = index_map.shape
 
@@ -128,7 +131,7 @@ def batch_update_grid_point_irradiance(point_grid, voxel_grid, irradiance, index
             batch_start = i
             batch_end = min(i + batch_size, num_points)
             futures.append(
-                executor.submit(process_batch, batch_start, batch_end, num_samples, point_grid, voxel_grid, irradiance.shape, index_map.filename, azimuth_map.filename, elevation_map.filename, index_map_shape)
+                executor.submit(process_batch, batch_start, batch_end, num_samples, voxel_grid, num_time_steps, index_map.filename, azimuth_map.filename, elevation_map.filename, my_albedo)
             )
 
         for future in tqdm(as_completed(futures), total=len(futures), desc="Processing points"):
@@ -193,35 +196,53 @@ def read_sunpos(file_path):
     
     return sun_positions
 
+
+
+def obtain_epw(epw_filename, sunpos_filename):
+    epw = pvlib.iotools.read_epw(epw_filename)
+    sunpos = pd.read_csv(sunpos_filename)
+    sunpos.columns.values[0]='timestamp'
+
+    irradiance_data = epw[0]
+    irradiance_data.index = pd.to_datetime(irradiance_data.index)
+
+    sunpos['timestamp'] = pd.to_datetime(sunpos['timestamp'], utc=True)
+    all_ghi = []
+    all_dni = []
+    all_dhi = []
+    # all_solar_zenith = []
+    # all_solar_azimuth = []
+    # all_dni_extra = []
+
+    for index, row in sunpos.iterrows():
+            row_time = row['timestamp'].tz_convert(irradiance_data.index.tz)
+            month, day, hour = row_time.month, row_time.day, row_time.hour
+            if month == 2 and day == 29:
+                day = 28
+            match = irradiance_data[(irradiance_data.index.month == month) & 
+                        (irradiance_data.index.day == day) & 
+                        (irradiance_data.index.hour == hour)]
+            # solar_zenith = row['apparent_zenith']
+            # solar_azimuth = row['azimuth']
+            # dni_extra = pvlib.irradiance.get_extra_radiation(row['timestamp'])
+            if (not match.empty):
+                ghi, dni, dhi, dni_extra = match.iloc[0][['ghi', 'dni', 'dhi', 'etrn']]
+                if dni_extra == 0:
+                    dni_extra = pvlib.irradiance.get_extra_radiation(row['timestamp'])
+                all_ghi.append(ghi)
+                all_dni.append(dni)
+                all_dhi.append(dhi)
+                # all_solar_zenith.append(solar_zenith)
+                # all_solar_azimuth.append(solar_azimuth)
+                # all_dni_extra.append(dni_extra)
+            else:
+                print("error finding match")
+    
+    epw_data = np.column_stack((all_ghi, all_dhi, all_dni))
+    return epw_data
+
+
 if __name__=="__main__":
-    # Load the point cloud data
-    # point_grid_path = "./out/build/grid_points.dat"
-    # index_map_path = "./out/build/index_map.dat"
-    # shadow_map_path = "./out/build/shadow_map.dat"
-
-    # azimuth_map_path = "./out/build/azimuth_map.dat"
-    # elevation_map_path = "./out/build/elevation_map.dat"
-    # voxel_dim = (587,590,50)
-    # voxel_size = 2.0
-    # num_samples = 360*90
-
-    # index_map = np.memmap(index_map_path, dtype=np.uint32, mode='r')
-    # azimuth_map = np.memmap(azimuth_map_path, dtype=np.float16, mode='r')
-    # elevation_map = np.memmap(elevation_map_path, dtype=np.float16, mode='r')
-    # point_grid = np.loadtxt(point_grid_path)
-
-    # irradiance = np.random.uniform(0, 1000, point_grid.shape[0])
-
-    # first_voxel_grid = pd_integrate_voxel_info(point_grid, irradiance, voxel_dim, voxel_size)
-
-    # lp = LineProfiler()
-    # lp_wrapper = lp(batch_update_grid_point_irradiance)
-    # lp_wrapper(point_grid, first_voxel_grid, irradiance, index_map, azimuth_map, elevation_map, num_samples)
-    # lp.print_stats()
-
-    # updated_irradiance_1 = batch_update_grid_point_irradiance(point_grid, first_voxel_grid, irradiance, index_map, azimuth_map, elevation_map)
-    # updated_voxel_grid = pd_integrate_voxel_info(point_grid, updated_irradiance_1, voxel_dim, voxel_size)
-    # updated_irradiance_2 = batch_update_grid_point_irradiance(point_grid, updated_voxel_grid, updated_irradiance_1, index_map, azimuth_map, elevation_map)
 
     with open('config.json', 'r') as file:
         CONFIG = json.load(file)
@@ -244,13 +265,15 @@ if __name__=="__main__":
     num_azimuth = 360//CONFIG['azimuth_resolution']
     num_elevation = 90//CONFIG['elevation_resolution']
     voxel_size = CONFIG['voxel_resolution']
+    batch_size = CONFIG['irradiance_batch_size']
+    albedo = CONFIG['albedo']
+    num_bounces = CONFIG['num_bounces']
 
 
     num_samples = num_azimuth*num_elevation
     index_dim = (num_elevation,num_azimuth)
 
     point_grid = np.loadtxt(point_grid_path)
-    # horizon_factor_path = np.memmap(horizon_factor_path, dtype=np.float16, mode='r')
     svf_data = np.memmap(sky_view_factor_path, dtype=np.int32, mode='r')
 
     index_map = np.memmap(index_map_path, dtype=np.uint32, mode='r')
@@ -259,7 +282,9 @@ if __name__=="__main__":
 
     solar_position = read_sunpos(solar_position_path)
     shadow_result = np.memmap(shadow_map_path, dtype=bool, mode='r')
-    weather_data = np.random.randint(0, 1000, size=(solar_position.shape[0], 3))
+    # weather_data = np.random.randint(0, 1000, size=(solar_position.shape[0], 3))
+    epw_filename = os.path.join(folder_path, CONFIG['epw_file'])
+    weather_data = obtain_epw(epw_filename, solar_position_path)
 
     svf_new_shape = svf_data[:,np.newaxis]
     svf_map = svf_new_shape.astype(np.float32)/num_samples
@@ -268,15 +293,25 @@ if __name__=="__main__":
     direct_irradiance, diffuse_irradiance = calculate_isotropic(point_grid, shadow_map, svf_map, weather_data, solar_position)
     irradiance = direct_irradiance + diffuse_irradiance
 
-    first_voxel_grid = pd_integrate_voxel_info(point_grid, irradiance, voxel_dimension, voxel_size)
-    unique_shapes = first_voxel_grid['irradiance'].apply(lambda x: x.shape).unique()
+    # first_voxel_grid = pd_integrate_voxel_info(point_grid, irradiance, voxel_dimension, voxel_size)
+    # unique_shapes = first_voxel_grid['irradiance'].apply(lambda x: x.shape).unique()
     # updated_irradiance_1 = batch_update_grid_point_irradiance(point_grid, first_voxel_grid, irradiance, index_map, azimuth_map, elevation_map, num_samples)
 
     # print(np.unique(updated_irradiance_1))
 
-    lp = LineProfiler()
-    lp_wrapper = lp(batch_update_grid_point_irradiance)
-    lp_wrapper(point_grid, first_voxel_grid, irradiance, index_map, azimuth_map, elevation_map, num_samples)
-    lp.print_stats()
+    # lp = LineProfiler()
+    # lp_wrapper = lp(batch_update_grid_point_irradiance)
+    # lp_wrapper(point_grid, first_voxel_grid, irradiance, index_map, azimuth_map, elevation_map, num_samples, batch_size, albedo)
+    # lp.print_stats()
+
+    irradiance_list = [irradiance]
+
+    for i in range(num_bounces):
+        voxel_grid = pd_integrate_voxel_info(point_grid, irradiance_list[i], voxel_dimension, voxel_size)
+        updated_irradiance = batch_update_grid_point_irradiance(point_grid, voxel_grid, irradiance, index_map, azimuth_map, elevation_map, num_samples, batch_size, albedo)
+        irradiance_list.append(updated_irradiance)
+
+    irradiance_arr = np.stack(irradiance_list)
+    np.save(os.path.join(data_root, 'irradiance.npy'), irradiance_arr)
 
 

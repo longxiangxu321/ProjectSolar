@@ -1,20 +1,24 @@
 {
     "azimuth_resolution": 2,
     "elevation_resolution": 2,
-    "epw_file": null,
+    "area_per_point": 25,
+    "num_bounces": 1,
+    "irradiance_batch_size": 1500,
+    "albedo":0.1,
+    "epw_file": "heino.epw",
     "irradiance_model": "isotropic",
-    "output_folder_name": "output_20240815_113456",
     "study_area": {
         "data_root": "./data/Heino",
+        "start_time": "2023-01-01 00:00:00",
         "end_time": "2023-01-02 00:00:00",
         "frequency": "h",
         "lat": 53.21562567169522,
         "long": 6.567723598534742,
-        "start_time": "2023-01-01 00:00:00",
         "timezone": "Europe/Amsterdam"
     },
     "voxel_dim_x": 1333,
     "voxel_dim_y": 1333,
     "voxel_dim_z": 9,
-    "voxel_resolution": 2
+    "voxel_resolution": 2,
+    "output_folder_name": "output_20240815_113456"
 }

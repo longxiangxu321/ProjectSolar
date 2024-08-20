@@ -66,6 +66,7 @@ namespace osc {
                                         /"shadow_map.dat";
 
     const int batch_size = 2500;
+    const float point_grid_sampling_density = CFG["area_per_point"];
 
     std::cout<<"Reading city model"<<std::endl;
 
@@ -107,10 +108,10 @@ namespace osc {
       model->transformModel();
       SampleRenderer *renderer = new SampleRenderer(model);
 
-      float sampling_density = 16;
+      
 
       // std::vector<GridPoint> gridpoints= create_point_grid(*model);
-      std::vector<GridPoint> raw_gridpoints= create_point_grid(*model);
+      std::vector<GridPoint> raw_gridpoints= create_point_grid(*model, point_grid_sampling_density);
       std::vector<GridPoint> gridpoints = clean_point_grid(raw_gridpoints);
       
       std::cout<<"Grid points created: "<< gridpoints.size()<<std::endl;

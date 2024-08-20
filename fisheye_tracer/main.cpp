@@ -72,6 +72,7 @@ namespace osc {
     std::filesystem::path config_backup_path = root_folder / CFG["output_folder_name"]
                                             /"config.json";
     
+    const float point_grid_sampling_density = CFG["area_per_point"];
     const int batch_size = 2500;
     const int azimuth_resolution = CFG["azimuth_resolution"];
     const int elevation_resolution = CFG["elevation_resolution"];
@@ -122,7 +123,7 @@ namespace osc {
       // std::cout<<renderer->launchParams.bbox_min<<std::endl;
       // std::cout<<renderer->launchParams.bbox_max<<std::endl;
 
-      std::vector<GridPoint> raw_gridpoints= create_point_grid(*model);
+      std::vector<GridPoint> raw_gridpoints= create_point_grid(*model, point_grid_sampling_density);
       std::vector<GridPoint> gridpoints = clean_point_grid(raw_gridpoints);
       std::cout<<"Grid points created: "<< gridpoints.size()<<std::endl;
 

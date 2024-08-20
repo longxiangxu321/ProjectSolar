@@ -37,7 +37,7 @@ namespace osc {
 
 
 
-    std::vector<GridPoint> create_point_grid(const Model& citymodel);
+    std::vector<GridPoint> create_point_grid(const Model& citymodel, float sampling_density);
 
     float inline calculate_dist(vec3f a, vec3f b) {
         return sqrt(pow(a.x - b.x, 2) + pow(a.y - b.y, 2) + pow(a.z - b.z, 2));

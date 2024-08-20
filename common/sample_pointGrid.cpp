@@ -71,12 +71,17 @@ void calculate_mass_center(const vec3f &A, const vec3f &B, const vec3f &C, const
 
 
 
-std::vector<GridPoint> create_point_grid(const Model& citymodel) {
+std::vector<GridPoint> create_point_grid(const Model& citymodel, float sampling_density = 16) {
+    // std::string output_file = "../grid.xyz";
+    // std::string output_file = CFG["shadow_calc"]["pointgrid_path"];
+    // std::ofstream out(output_file);
+
+    // float sampling_density = 16;
 //    std::string output_file = "../grid.xyz";
     // std::string output_file = CFG["shadow_calc"]["pointgrid_path"];
     // std::ofstream out(output_file);
 
-    float sampling_density = 16;
+    // float sampling_density = 16;
 
 
 
