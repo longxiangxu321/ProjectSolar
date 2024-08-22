@@ -122,8 +122,9 @@ std::vector<GridPoint> create_point_grid(const Model& citymodel, float sampling_
 
                 int surf_gmlid = (*it)->globalID[triangle_index];
                 int surface_type = (*it)->surfaceType[triangle_index];
+                float surface_albedo = (*it)->albedo[triangle_index];
 
-                Triangle_info triangle_info = {(*it)->normal[triangle_index], surf_gmlid, surface_type};
+                Triangle_info triangle_info = {(*it)->normal[triangle_index], surf_gmlid, surface_type, surface_albedo};
 
                 calculate_mass_center(v0, v1, v2, num_s, grid_current, 0, num_s+2, triangle_info);
 
@@ -146,7 +147,7 @@ void save_point_grid(const std::vector<GridPoint> &grid_n, const vec3f &translat
         output_stream << std::setprecision(6) 
         << gp.position.x - translation.x << " " << gp.position.y - translation.y << " " << gp.position.z - translation.z<< " "
         << gp.triangle_info.direction.x << " "<< gp.triangle_info.direction.y << " "<< gp.triangle_info.direction.z << " "
-        << gp.triangle_info.surface_type<<"\n";
+        << gp.triangle_info.surface_albedo << " "<< gp.triangle_info.surface_type<<"\n";
     }
     output_stream.close();
 }

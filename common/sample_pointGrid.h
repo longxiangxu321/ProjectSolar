@@ -14,6 +14,7 @@ namespace osc {
         vec3f direction;
         uint32_t surf_gmlid;
         int surface_type;
+        float surface_albedo;
     };
 
 

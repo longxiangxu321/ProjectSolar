@@ -20,23 +20,29 @@ def pd_integrate_voxel_info(point_grid, irradiance_vals, voxel_dim, voxel_size=2
     voxel_grid = {}
     bbox_min = np.min(point_grid[:, :3], axis=0)
     
-    def compute_intensity_for_face(normals, face_normal):
+    def compute_intensity_for_face(normals, face_normal, albedos):
         ratio = np.sum(normals @ face_normal > 0) / len(normals)
         dot_products = normals[normals @ face_normal > 0] @ face_normal
+        
         if len(dot_products) > 0:
             intensity = np.mean(dot_products) * ratio
+            mean_albedo = np.mean(albedos[normals @ face_normal > 0])
         else:
             intensity = 0
-        return intensity
+            mean_albedo = 0
+        
+        
+        return intensity, mean_albedo
 
 
     for i in range(point_grid.shape[0]):
         voxel_ids = ((point_grid[i, :3] - bbox_min) / voxel_size).astype(int)
         voxel_idx = voxel_ids[0] + voxel_ids[1] * voxel_dim[0] + voxel_ids[2] * voxel_dim[0] * voxel_dim[1]
         if voxel_idx not in voxel_grid:
-            voxel_grid[voxel_idx] = {'normals': [], 'irradiance': 0}
+            voxel_grid[voxel_idx] = {'normals': [], 'irradiance': 0, 'albedos':[]}
         voxel_grid[voxel_idx]['normals'].append(point_grid[i, 3:6])
         voxel_grid[voxel_idx]['irradiance'] += irradiance_vals[i]
+        voxel_grid[voxel_idx]['albedos'].append(point_grid[i, 6])
 
     data = []
     data.append({
@@ -52,23 +58,25 @@ def pd_integrate_voxel_info(point_grid, irradiance_vals, voxel_dim, voxel_size=2
     
     for voxel_idx, voxel_data in voxel_grid.items():
         normals = np.array(voxel_data['normals'])
-        up_intensity = compute_intensity_for_face(normals, np.array([0, 0, 1])) + 0.1
-        down_intensity = compute_intensity_for_face(normals, np.array([0, 0, -1])) + 0.1
-        left_intensity = compute_intensity_for_face(normals, np.array([-1, 0, 0])) + 0.1
-        right_intensity = compute_intensity_for_face(normals, np.array([1, 0, 0])) + 0.1
-        front_intensity = compute_intensity_for_face(normals, np.array([0, -1, 0])) + 0.1
-        back_intensity = compute_intensity_for_face(normals, np.array([0, 1, 0])) + 0.1
+        albedos = np.array(voxel_data['albedos'])
+        up_intensity, up_mean_albedo = compute_intensity_for_face(normals, np.array([0, 0, 1]), albedos)
+        down_intensity, down_mean_albedo = compute_intensity_for_face(normals, np.array([0, 0, -1]), albedos)
+        left_intensity, left_mean_albedo = compute_intensity_for_face(normals, np.array([-1, 0, 0]), albedos)
+        right_intensity, right_mean_albedo = compute_intensity_for_face(normals, np.array([1, 0, 0]), albedos)
+        front_intensity, front_mean_albedo = compute_intensity_for_face(normals, np.array([0, -1, 0]), albedos)
+        back_intensity, back_mean_albedo = compute_intensity_for_face(normals, np.array([0, 1, 0]), albedos)
 
         intensity_sum = (up_intensity + down_intensity + left_intensity + right_intensity +
                          front_intensity + back_intensity)
 
+        offset =  1e-6
         if intensity_sum > 0:
-            up_intensity /= intensity_sum
-            down_intensity /= intensity_sum
-            left_intensity /= intensity_sum
-            right_intensity /= intensity_sum
-            front_intensity /= intensity_sum
-            back_intensity /= intensity_sum
+            up_intensity = up_mean_albedo * (up_intensity +  offset)/intensity_sum
+            down_intensity = down_mean_albedo * (down_intensity + offset)/intensity_sum
+            left_intensity = left_mean_albedo * (left_intensity + offset)/intensity_sum
+            right_intensity = right_mean_albedo * (right_intensity + offset)/intensity_sum
+            front_intensity = front_mean_albedo * (front_intensity + offset)/intensity_sum
+            back_intensity = back_mean_albedo * (back_intensity + offset)/intensity_sum
 
         data.append({
             'voxel_idx': voxel_idx,
@@ -88,7 +96,7 @@ def pd_integrate_voxel_info(point_grid, irradiance_vals, voxel_dim, voxel_size=2
 
 
 
-def process_batch(batch_start, batch_end, num_samples, voxel_grid, num_timestep, shared_index_map_name, shared_azimuth_map_name, shared_elevation_map_name, albedo):
+def process_batch(batch_start, batch_end, num_samples, voxel_grid, num_timestep, shared_index_map_name, shared_azimuth_map_name, shared_elevation_map_name):
     # 通过共享内存加载数据
     existing_index_map = np.memmap(shared_index_map_name, dtype=np.uint32, mode='r')
     existing_azimuth_map = np.memmap(shared_azimuth_map_name, dtype=np.float16, mode='r')
@@ -112,16 +120,12 @@ def process_batch(batch_start, batch_end, num_samples, voxel_grid, num_timestep,
     contributions_raw = x_mask + y_mask + z_mask
     contributions = np.repeat(contributions_raw[:, np.newaxis], num_timestep, axis=1)
     
-    return np.sum(albedo * contributions * pixels_irradiance / num_samples , axis=0), batch_start, batch_end
+    return np.sum(contributions * pixels_irradiance / num_samples , axis=0), batch_start, batch_end
 
-def batch_update_grid_point_irradiance(point_grid, voxel_grid, irradiance, index_map, azimuth_map, elevation_map, num_samples, batch_size, my_albedo):
+def batch_update_grid_point_irradiance(point_grid, voxel_grid, irradiance, index_map, azimuth_map, elevation_map, num_samples, batch_size):
     num_points = point_grid.shape[0]
     updated_irradiance = np.zeros_like(irradiance)
     num_time_steps = irradiance.shape[1]
-
-    # num_points = 10000
-    # batch_size = 1500
-    # my_albedo
 
     index_map_shape = index_map.shape
 
@@ -131,7 +135,7 @@ def batch_update_grid_point_irradiance(point_grid, voxel_grid, irradiance, index
             batch_start = i
             batch_end = min(i + batch_size, num_points)
             futures.append(
-                executor.submit(process_batch, batch_start, batch_end, num_samples, voxel_grid, num_time_steps, index_map.filename, azimuth_map.filename, elevation_map.filename, my_albedo)
+                executor.submit(process_batch, batch_start, batch_end, num_samples, voxel_grid, num_time_steps, index_map.filename, azimuth_map.filename, elevation_map.filename)
             )
 
         for future in tqdm(as_completed(futures), total=len(futures), desc="Processing points"):
@@ -266,7 +270,7 @@ if __name__=="__main__":
     num_elevation = 90//CONFIG['elevation_resolution']
     voxel_size = CONFIG['voxel_resolution']
     batch_size = CONFIG['irradiance_batch_size']
-    albedo = CONFIG['albedo']
+
     num_bounces = CONFIG['num_bounces']
 
 
@@ -308,7 +312,7 @@ if __name__=="__main__":
 
     for i in range(num_bounces):
         voxel_grid = pd_integrate_voxel_info(point_grid, irradiance_list[i], voxel_dimension, voxel_size)
-        updated_irradiance = batch_update_grid_point_irradiance(point_grid, voxel_grid, irradiance, index_map, azimuth_map, elevation_map, num_samples, batch_size, albedo)
+        updated_irradiance = batch_update_grid_point_irradiance(point_grid, voxel_grid, irradiance, index_map, azimuth_map, elevation_map, num_samples, batch_size)
         irradiance_list.append(updated_irradiance)
 
     irradiance_arr = np.stack(irradiance_list)

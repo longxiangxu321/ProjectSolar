@@ -20,6 +20,7 @@ namespace osc {
 
         std::vector<int> globalID;
         std::vector<int> surfaceType;
+        std::vector<float> albedo;
         vec3f diffuse;
 
         // int buildingID;

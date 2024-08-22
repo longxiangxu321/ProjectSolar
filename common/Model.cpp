@@ -1,5 +1,6 @@
 #include "Model.h"
 #include <map>
+#include <array>
 
 namespace osc {
 
@@ -9,10 +10,53 @@ namespace osc {
     surface_type_map["RoofSurface"] = 1;
     surface_type_map["GroundSurface"] = 2;
     surface_type_map["TIN"] = 3;
+    surface_type_map["Tree"] = 4;
     return surface_type_map;
     }
 
     std::map<std::string, int> surface_type_map = createSurfaceTypeMap();
+    std::map<std::string, float> surface_albedo_map = {{"WallSurface", 0.2}, 
+                                    {"RoofSurface", 0.1}, {"GroundSurface", 0.2}, 
+                                    {"TIN", 0.2}, {"Tree", 0.2}};
+
+    std::vector<vec3f> transformMesh(const std::array<float, 16>& matrix, const std::array<float, 3>& translate) {
+        const std::vector<vec3f> mesh = {
+            vec3f(-0.025f, -0.001f, 0.41f),
+            vec3f(-0.025f, -0.001f, 0.0f),
+            vec3f(0.025f, 0.001f, 0.0f),
+            vec3f(0.025f, 0.001f, 0.41f),
+            vec3f(0.0f, 0.0f, 0.4f),
+            vec3f(0.001f, -0.025f, 0.41f),
+            vec3f(0.001f, -0.025f, 0.0f),
+            vec3f(-0.001f, 0.025f, 0.0f),
+            vec3f(-0.001f, 0.025f, 0.41f),
+            vec3f(-0.006f, 0.212f, 0.488f),
+            vec3f(-0.008f, 0.299f, 0.7f),
+            vec3f(-0.006f, 0.212f, 0.912f),
+            vec3f(0.0f, 0.0f, 1.0f),
+            vec3f(0.006f, -0.212f, 0.912f),
+            vec3f(0.008f, -0.299f, 0.7f),
+            vec3f(0.006f, -0.212f, 0.488f),
+            vec3f(0.212f, 0.006f, 0.488f),
+            vec3f(0.299f, 0.008f, 0.7f),
+            vec3f(0.212f, 0.006f, 0.912f),
+            vec3f(-0.212f, -0.006f, 0.912f),
+            vec3f(-0.299f, -0.008f, 0.7f),
+            vec3f(-0.212f, -0.006f, 0.488f)
+        };
+
+        std::vector<vec3f> transformedcoords;
+        transformedcoords.reserve(mesh.size());
+
+        for (const auto& vertex : mesh) {
+            float x = vertex.x * matrix[0] + vertex.y * matrix[4] + vertex.z * matrix[8] + matrix[12] + translate[0];
+            float y = vertex.x * matrix[1] + vertex.y * matrix[5] + vertex.z * matrix[9] + matrix[13] + translate[1];
+            float z = vertex.x * matrix[2] + vertex.y * matrix[6] + vertex.z * matrix[10] + matrix[14] + translate[2];
+            transformedcoords.emplace_back(x, y, z);
+        }
+
+        return transformedcoords;
+    }
 
 
     // std::tuple<int, int> global local
@@ -252,7 +296,10 @@ namespace osc {
                                 mesh->globalID.push_back(gmlid_int);
                                 std::string type = g["semantics"]["surfaces"][i]["type"];
                                 int surface_type_id = surface_type_map[type];
+                                float surface_albedo = surface_albedo_map[type];
+                                mesh->albedo.push_back(surface_albedo);
                                 mesh->surfaceType.push_back(surface_type_id);
+                                
                                 total_triangles++;
                         }
   
@@ -311,6 +358,7 @@ namespace osc {
         int building_index = 0;
         int total_triangles = 0;
         int TIN_index = 0;
+        int Tree_index = 0;
 
         TriangleMesh *mesh = nullptr;
         std::map<int, int> vertexMap;
@@ -375,7 +423,9 @@ namespace osc {
                                 mesh->globalID.push_back(gmlid_int);
                                 std::string type = g["semantics"]["surfaces"][i]["type"];
                                 int surface_type_id = surface_type_map[type];
+                                float surface_albedo = surface_albedo_map[type];
                                 mesh->surfaceType.push_back(surface_type_id);
+                                mesh->albedo.push_back(surface_albedo);
                                 total_triangles++;
                         }
   
@@ -458,7 +508,9 @@ namespace osc {
                                 mesh->globalID.push_back(gmlid_int);
                                 std::string type = "TIN";
                                 int surface_type_id = surface_type_map[type];
+                                float surface_albedo = surface_albedo_map[type];
                                 mesh->surfaceType.push_back(surface_type_id);
+                                mesh->albedo.push_back(surface_albedo);
                                 total_triangles++;
                         }                
                     }
@@ -466,7 +518,7 @@ namespace osc {
                     
                 }
                 
-                mesh->diffuse = gdt::randomColor(building_index);
+                mesh->diffuse = gdt::randomColor(TIN_index);
  
                 
                 assert(mesh->vertex.size() == vertexMap.size());
@@ -478,15 +530,100 @@ namespace osc {
                     model->meshes.push_back(mesh);
                     TIN_index++;
                 }   else {
-                    std::cout<<"Empty mesh, deleting TIN terrain"<< building_index <<std::endl;
+                    std::cout<<"Empty mesh, deleting TIN terrain"<< TIN_index <<std::endl;
                     delete mesh;
                 }
                 
             }
 
+            else if (co.value()["type"] == "SolitaryVegetationObject") {
+                vertexMap.clear();
+                mesh = new TriangleMesh;
 
 
+                std::array<float, 16> transformation_matrix;
+                for (int i = 0; i < 16; ++i) {
+                    transformation_matrix[i] = co.value()["geometry"][0]["transformationMatrix"][i].get<float>();
+                }
+
+                std::array<float, 3> translate_arr;
+                for (int i = 0; i < 3; ++i) {
+                    translate_arr[i] = co.value()["geographicalExtent"][i].get<float>();
+                }
+
+                std::vector<vec3f> transformedcoords = transformMesh(transformation_matrix, translate_arr);
+
+
+
+                for (int i = 0; i < transformedcoords.size(); i++) {
+                    mesh->vertex.push_back(transformedcoords[i]);
+                }
+
+                const std::vector<vec3i> faces = {
+                    vec3i(4, 1, 2),
+                    vec3i(1, 4, 0),
+                    vec3i(3, 4, 2),
+                    vec3i(4, 3, 0),
+                    vec3i(4, 6, 7),
+                    vec3i(6, 4, 5),
+                    vec3i(8, 4, 7),
+                    vec3i(4, 8, 5),
+                    vec3i(5, 13, 14),
+                    vec3i(13, 5, 12),
+                    vec3i(15, 5, 14),
+                    vec3i(5, 8, 12),
+                    vec3i(8, 11, 12),
+                    vec3i(11, 8, 10),
+                    vec3i(8, 9, 10),
+                    vec3i(8, 5, 4),
+                    vec3i(0, 19, 20),
+                    vec3i(19, 0, 12),
+                    vec3i(21, 0, 20),
+                    vec3i(0, 3, 12),
+                    vec3i(3, 18, 12),
+                    vec3i(18, 3, 17),
+                    vec3i(3, 16, 17),
+                    vec3i(3, 0, 4)
+                };
+
+                for (int i = 0; i < faces.size(); i++) {
+                    mesh->index.push_back(faces[i]);
+                    vec3f normal = normalize(cross(transformedcoords[faces[i].y] - transformedcoords[faces[i].x], transformedcoords[faces[i].z] - transformedcoords[faces[i].x]));
+                    mesh->normal.push_back(normal);
+
+                    mesh->globalID.push_back(total_triangles++);
+                    std::string type = "Tree";
+                    int surface_type_id = surface_type_map[type];
+                    float surface_albedo = surface_albedo_map[type];
+                    mesh->surfaceType.push_back(surface_type_id);
+                    mesh->albedo.push_back(surface_albedo);
+                    total_triangles++;
+                }
+
+
+
+
+                
+                mesh->diffuse = gdt::randomColor(Tree_index);
+ 
+                
+                // assert(mesh->vertex.size() == vertexMap.size());
+                // assert(mesh->index.size() == mesh->normal.size());
+                // assert(mesh->index.size() == mesh->globalID.size());
+
+                
+                if (mesh->vertex.size() > 0 && mesh->index.size() > 0){
+                    model->meshes.push_back(mesh);
+                    Tree_index++;
+                }   else {
+                    std::cout<<"Empty mesh, deleting Tree"<< Tree_index <<std::endl;
+                    delete mesh;
+                }
+                
+            }
         }
+
+        
 
 
 
@@ -494,6 +631,7 @@ namespace osc {
         std::cout<<"bouding box high "<<model->bounds.upper.x<<" "<<model->bounds.upper.y<<" "<<model->bounds.upper.z<<std::endl;
         std::cout<<"Total building num " << building_index<<std::endl;
         std::cout<<"Total TIN num " << TIN_index<<std::endl;
+        std::cout<<"Total Tree num " << Tree_index<<std::endl;
         std::cout<<"Total triangle num " << total_triangles<<std::endl;
         std::cout<<"Total vertex num " << lspts.size()<<std::endl;
         model->original_center = model->bounds.center();
