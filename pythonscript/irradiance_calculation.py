@@ -20,63 +20,64 @@ def pd_integrate_voxel_info(point_grid, irradiance_vals, voxel_dim, voxel_size, 
     voxel_grid = {}
     # bbox_min = np.min(point_grid[:, :3], axis=0)
     
-    def compute_intensity_for_face(normals, face_normal, albedos):
-        ratio = np.sum(normals @ face_normal > 0) / len(normals)
-        dot_products = normals[normals @ face_normal > 0] @ face_normal
+    def compute_intensity_for_face(normals, face_normal, albedos, irradiance_values):
+        """
+        irradiance_values: shape (N, M), representing the irradiance values for each point in M timesteps.
+        normals: shape (N, 3), representing the normal vectors of each point.
+        face_normal: shape (3,), representing the normal vector of the face.
+        albedos: shape (N,), representing the albedo values of each point.
         
-        if len(dot_products) > 0:
-            intensity = np.mean(dot_products) * ratio
-            mean_albedo = np.mean(albedos[normals @ face_normal > 0])
+        """
+
+        valid_indices = normals @ face_normal > 0
+        valid_normals = normals[valid_indices]
+        normalized_normals = valid_normals / np.linalg.norm(valid_normals, axis=1, keepdims=True)
+        normalized_face_normal = face_normal / np.linalg.norm(face_normal)
+        valid_irradiance_values = irradiance_values[valid_indices]
+
+        intensity_contributions = valid_irradiance_values * albedos[valid_indices] * (normalized_normals @ normalized_face_normal)
+        
+        
+        if len(intensity_contributions) > 0:
+            intensity = np.mean(intensity_contributions, axis=0)
         else:
-            intensity = 0
-            mean_albedo = 0
+            intensity = np.zeros(irradiance_values.shape[1])
         
-        
-        return intensity, mean_albedo
+        return intensity
 
 
     for i in range(point_grid.shape[0]):
         voxel_ids = ((point_grid[i, :3] - bbox_min) / voxel_size).astype(int)
         voxel_idx = voxel_ids[0] + voxel_ids[1] * voxel_dim[0] + voxel_ids[2] * voxel_dim[0] * voxel_dim[1]
         if voxel_idx not in voxel_grid:
-            voxel_grid[voxel_idx] = {'normals': [], 'irradiance': 0, 'albedos':[]}
+            voxel_grid[voxel_idx] = {'normals': [], 'irradiance': [], 'albedos':[]}
         voxel_grid[voxel_idx]['normals'].append(point_grid[i, 3:6])
-        voxel_grid[voxel_idx]['irradiance'] += irradiance_vals[i]
+        voxel_grid[voxel_idx]['irradiance'].append(np.array(irradiance_vals[i]))
         voxel_grid[voxel_idx]['albedos'].append(point_grid[i, 6])
 
     data = []
     data.append({
         'voxel_idx': np.iinfo(np.uint32).max,
         'irradiance': np.zeros_like(irradiance_vals[0]),
-        'up_intensity': 0,
-        'down_intensity': 0,
-        'left_intensity': 0,
-        'right_intensity': 0,
-        'front_intensity': 0,
-        'back_intensity': 0
+        'up_intensity': np.zeros_like(irradiance_vals[0]),
+        'down_intensity': np.zeros_like(irradiance_vals[0]),
+        'left_intensity': np.zeros_like(irradiance_vals[0]),
+        'right_intensity': np.zeros_like(irradiance_vals[0]),
+        'front_intensity': np.zeros_like(irradiance_vals[0]),
+        'back_intensity': np.zeros_like(irradiance_vals[0])
     })
     
     for voxel_idx, voxel_data in voxel_grid.items():
         normals = np.array(voxel_data['normals'])
         albedos = np.array(voxel_data['albedos'])
-        up_intensity, up_mean_albedo = compute_intensity_for_face(normals, np.array([0, 0, 1]), albedos)
-        down_intensity, down_mean_albedo = compute_intensity_for_face(normals, np.array([0, 0, -1]), albedos)
-        left_intensity, left_mean_albedo = compute_intensity_for_face(normals, np.array([-1, 0, 0]), albedos)
-        right_intensity, right_mean_albedo = compute_intensity_for_face(normals, np.array([1, 0, 0]), albedos)
-        front_intensity, front_mean_albedo = compute_intensity_for_face(normals, np.array([0, -1, 0]), albedos)
-        back_intensity, back_mean_albedo = compute_intensity_for_face(normals, np.array([0, 1, 0]), albedos)
+        irradiance_value = np.array(voxel_data['irradiance'])
 
-        intensity_sum = (up_intensity + down_intensity + left_intensity + right_intensity +
-                         front_intensity + back_intensity)
-
-        offset =  1e-6
-        if intensity_sum > 0:
-            up_intensity = up_mean_albedo * (up_intensity +  offset)/intensity_sum
-            down_intensity = down_mean_albedo * (down_intensity + offset)/intensity_sum
-            left_intensity = left_mean_albedo * (left_intensity + offset)/intensity_sum
-            right_intensity = right_mean_albedo * (right_intensity + offset)/intensity_sum
-            front_intensity = front_mean_albedo * (front_intensity + offset)/intensity_sum
-            back_intensity = back_mean_albedo * (back_intensity + offset)/intensity_sum
+        up_intensity= compute_intensity_for_face(normals, np.array([0, 0, 1]), albedos, irradiance_value)
+        down_intensity = compute_intensity_for_face(normals, np.array([0, 0, -1]), albedos, irradiance_value)
+        left_intensity= compute_intensity_for_face(normals, np.array([-1, 0, 0]), albedos, irradiance_value)
+        right_intensity = compute_intensity_for_face(normals, np.array([1, 0, 0]), albedos, irradiance_value)
+        front_intensity = compute_intensity_for_face(normals, np.array([0, -1, 0]), albedos, irradiance_value)
+        back_intensity = compute_intensity_for_face(normals, np.array([0, 1, 0]), albedos, irradiance_value)
 
         data.append({
             'voxel_idx': voxel_idx,
@@ -107,9 +108,14 @@ def process_batch(batch_start, batch_end, num_samples, voxel_grid, num_timestep,
     voxel_indexes = existing_index_map[batch_start*num_samples:batch_end*num_samples]
 
     relevant_voxels = voxel_grid.reindex(voxel_indexes, fill_value=0.0)
+
+    # 修改，对所有的值进行填充
     relevant_voxels['irradiance'] = relevant_voxels['irradiance'].apply(
         lambda x: np.zeros(num_timestep) if isinstance(x, float) else x
     )
+
+    #对每条数据，找到relevant_voxels中对应的值，例如relevant_voxels['right_intensity'].values
+    #然后根据azimuth和elevation，计算与对应face的normal的cos值，然后把cos值乘以irradiance
 
     pixels_irradiance = np.vstack(relevant_voxels['irradiance'].values)
 
