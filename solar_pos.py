@@ -5,6 +5,7 @@ import pytz
 import json
 from datetime import datetime
 import os
+from cjio import cityjson
 
 def main():
     with open('config.json', 'r') as file:
@@ -12,6 +13,7 @@ def main():
     
     cfg = CONFIG["study_area"]
     tz = cfg["timezone"]
+
     lat, lon = cfg["lat"], cfg["long"]
     times = pd.date_range(cfg["start_time"], cfg["end_time"], freq=cfg["frequency"], tz=tz)
     solpos = solarposition.get_solarposition(times, lat, lon)

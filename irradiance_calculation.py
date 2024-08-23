@@ -7,18 +7,18 @@ import json
 import os
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import pvlib
+import time
 
 
 
-
-def pd_integrate_voxel_info(point_grid, irradiance_vals, voxel_dim, voxel_size=2.0):
+def pd_integrate_voxel_info(point_grid, irradiance_vals, voxel_dim, voxel_size, bbox_min):
     """
     Integrate the point cloud data into a voxel grid and calculate the irradiance values for each voxel.
     point_grid: np.array, shape=(N, 6), dtype=float32, the point cloud data with normal vectors.
     irradiance_vals: np.array, shape=(N, M), dtype=float32, the irradiance values for each point in M timesteps.
     """
     voxel_grid = {}
-    bbox_min = np.min(point_grid[:, :3], axis=0)
+    # bbox_min = np.min(point_grid[:, :3], axis=0)
     
     def compute_intensity_for_face(normals, face_normal, albedos):
         ratio = np.sum(normals @ face_normal > 0) / len(normals)
@@ -265,13 +265,14 @@ if __name__=="__main__":
     horizon_factor_path = os.path.join(data_root, 'horizon_factor_map.dat')
     sky_view_factor_path = os.path.join(data_root,  'sky_view_factor_map.dat')
 
-    voxel_dimension = (CONFIG['voxel_dim_x'], CONFIG['voxel_dim_y'], CONFIG['voxel_dim_z'])
+    voxel_dimension = (CONFIG['result']['voxel_dim_x'], CONFIG['result']['voxel_dim_y'], CONFIG['result']['voxel_dim_z'])
     num_azimuth = 360//CONFIG['azimuth_resolution']
     num_elevation = 90//CONFIG['elevation_resolution']
     voxel_size = CONFIG['voxel_resolution']
     batch_size = CONFIG['irradiance_batch_size']
 
     num_bounces = CONFIG['num_bounces']
+    bbox_min = np.array(CONFIG['result']['bbox_min'])
 
 
     num_samples = num_azimuth*num_elevation
@@ -294,7 +295,10 @@ if __name__=="__main__":
     svf_map = svf_new_shape.astype(np.float32)/num_samples
     shadow_map = np.reshape(shadow_result, (point_grid.shape[0], solar_position.shape[0]))
 
+    start_time = time.time()
+    print("Calculating direct beam and sky diffuse irradiance")
     direct_irradiance, diffuse_irradiance = calculate_isotropic(point_grid, shadow_map, svf_map, weather_data, solar_position)
+    print("Direct beam and sky diffuse irradiance calculated")
     irradiance = direct_irradiance + diffuse_irradiance
 
     # first_voxel_grid = pd_integrate_voxel_info(point_grid, irradiance, voxel_dimension, voxel_size)
@@ -310,12 +314,29 @@ if __name__=="__main__":
 
     irradiance_list = [irradiance]
 
+    
+    print("Calculating global irradiance")
     for i in range(num_bounces):
-        voxel_grid = pd_integrate_voxel_info(point_grid, irradiance_list[i], voxel_dimension, voxel_size)
+        print(f"Calculating bounce {i+1}")
+        voxel_grid = pd_integrate_voxel_info(point_grid, irradiance_list[i], voxel_dimension, voxel_size, bbox_min)
         updated_irradiance = batch_update_grid_point_irradiance(point_grid, voxel_grid, irradiance, index_map, azimuth_map, elevation_map, num_samples, batch_size)
         irradiance_list.append(updated_irradiance)
 
     irradiance_arr = np.stack(irradiance_list)
+
+    end_time = time.time()
+
+    execution_time = end_time - start_time
+
+    CONFIG['global_irradiance_time'] = execution_time
+
+    with open('config.json', 'w') as file:
+        json.dump(CONFIG, file, indent=4)
+    
+    backup_config_path = os.path.join(data_root, 'config.json')
+    with open(backup_config_path, 'w') as file:
+        json.dump(CONFIG, file, indent=4)
+
     np.save(os.path.join(data_root, 'irradiance.npy'), irradiance_arr)
 
 

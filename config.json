@@ -6,7 +6,7 @@
     "irradiance_batch_size": 1000,
     "irradiance_model": "isotropic",
     "num_bounces": 1,
-    "output_folder_name": "output_20240815_113456",
+    "output_folder_name": "output_20240823_104408",
     "result": {
         "bbox_max": [
             215605.0,
@@ -19,8 +19,8 @@
             1.1240005493164063
         ],
         "num_timesteps": 8,
-        "shadow_calculation_time": 86.0568,
-        "viewshed_rendering_time": 58412.1829,
+        "shadow_calculation_time": 0.07608999311923981,
+        "viewshed_rendering_time": 55.9710807800293,
         "voxel_dim_x": 1333,
         "voxel_dim_y": 1333,
         "voxel_dim_z": 9

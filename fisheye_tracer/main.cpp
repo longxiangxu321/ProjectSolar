@@ -278,9 +278,9 @@ namespace osc {
       auto end = std::chrono::high_resolution_clock::now();
 
       std::chrono::duration<double, std::milli> elapsed = end - start; // 计算经过的毫秒数
-
-      std::cout << "Total rendering time: " << elapsed.count() << " ms" << std::endl;
-      CFG["result"]["viewshed_rendering_time"] = elapsed.count();
+      float compute_time = static_cast<float>(elapsed.count()) / 1000;
+      std::cout << "Total rendering time: " << compute_time << " second" << std::endl;
+      CFG["result"]["viewshed_rendering_time"] = compute_time;
 
       std::ofstream out_json("config.json");
       std::ofstream out_backup_json(config_backup_path);
