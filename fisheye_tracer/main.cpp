@@ -52,7 +52,7 @@ namespace osc {
           throw std::runtime_error("Config file does not exist.");}
 
     std::filesystem::path root_folder = CFG["study_area"]["data_root"];
-    std::filesystem::path target_tiles = root_folder / "citymodel" /"target_tiles";
+    std::filesystem::path target_tiles = root_folder / "citymodel";
     std::filesystem::path solar_position_path = root_folder / CFG["output_folder_name"] 
                                         / "intermediate" /"sun_pos.csv";
     

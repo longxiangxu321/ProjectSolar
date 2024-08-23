@@ -8,6 +8,11 @@ import os
 from cjio import cityjson
 
 def main():
+    current_file_path = os.path.abspath(__file__)
+    current_dir = os.path.dirname(current_file_path)
+    parent_dir = os.path.dirname(current_dir)
+    os.chdir(parent_dir)
+
     with open('config.json', 'r') as file:
         CONFIG = json.load(file)
     

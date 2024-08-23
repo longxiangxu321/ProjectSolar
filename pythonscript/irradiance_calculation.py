@@ -247,6 +247,11 @@ def obtain_epw(epw_filename, sunpos_filename):
 
 
 if __name__=="__main__":
+    current_file_path = os.path.abspath(__file__)
+    current_dir = os.path.dirname(current_file_path)
+    parent_dir = os.path.dirname(current_dir)
+    os.chdir(parent_dir)
+
 
     with open('config.json', 'r') as file:
         CONFIG = json.load(file)
@@ -328,7 +333,7 @@ if __name__=="__main__":
 
     execution_time = end_time - start_time
 
-    CONFIG['global_irradiance_time'] = execution_time
+    CONFIG["result"]["global_irradiance_time"] = execution_time
 
     with open('config.json', 'w') as file:
         json.dump(CONFIG, file, indent=4)

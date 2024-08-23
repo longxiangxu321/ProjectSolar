@@ -6,7 +6,7 @@
     "irradiance_batch_size": 1000,
     "irradiance_model": "isotropic",
     "num_bounces": 1,
-    "output_folder_name": "output_20240823_104408",
+    "output_folder_name": "output_20240823_160657",
     "result": {
         "bbox_max": [
             215605.0,
@@ -16,11 +16,11 @@
         "bbox_min": [
             212940.0,
             493127.5,
-            1.1240005493164063
+            1.1240005493164062
         ],
         "num_timesteps": 8,
-        "shadow_calculation_time": 0.07608999311923981,
-        "viewshed_rendering_time": 55.9710807800293,
+        "shadow_calculation_time": 0.09042859822511673,
+        "viewshed_rendering_time": 55.238590240478516,
         "voxel_dim_x": 1333,
         "voxel_dim_y": 1333,
         "voxel_dim_z": 9
@@ -34,5 +34,6 @@
         "start_time": "2023-01-01 00:00:00",
         "timezone": "Europe/Amsterdam"
     },
-    "voxel_resolution": 2
+    "voxel_resolution": 2,
+    "global_irradiance_time": 1834.2714636325836
 }

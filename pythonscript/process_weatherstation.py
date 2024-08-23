@@ -61,6 +61,12 @@ def assign_cityobject_attribute(cm):
                     new_semantics['surfaces'] = n_surfaces
                     new_semantics['values'] = n_values
                     cityobject['geometry'][geom_idx]['semantics'] = new_semantics
+            elif cityobject['type'] == 'SolitaryVegetationObject':
+                attributes = cityobject['attributes']
+                attributes['global_idx'] = global_idx
+                cityobject['attributes'] = attributes
+                global_idx += 1
+
 
 
         return cm_copy
@@ -68,6 +74,10 @@ def assign_cityobject_attribute(cm):
 
 
 if __name__ == '__main__':
+    current_file_path = os.path.abspath(__file__)
+    current_dir = os.path.dirname(current_file_path)
+    parent_dir = os.path.dirname(current_dir)
+    os.chdir(parent_dir)
 
     parser = argparse.ArgumentParser(description='处理命令行参数')
 
