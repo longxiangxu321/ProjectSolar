@@ -207,7 +207,8 @@ namespace osc {
       shadowFile.close();
 
       
-
+      std::filesystem::path config_backup_path = root_folder / CFG["output_folder_name"]
+                                            /"config.json";
 
       
 
@@ -217,7 +218,13 @@ namespace osc {
       std::chrono::duration<double, std::milli> elapsed = end - start; // 计算经过的毫秒数
 
       std::cout << "Total rendering time: " << elapsed.count() << " ms" << std::endl;
+      CFG["result"]["num_timesteps"] = num_directions;
+      CFG["result"]["shadow_calculation_time"] = elapsed.count();
 
+      std::ofstream out_json("config.json");
+      std::ofstream out_backup_json(config_backup_path);
+      out_json << std::setw(4) << CFG << std::endl;
+      out_backup_json << std::setw(4) << CFG << std::endl;
 
       // std::cout << GDT_TERMINAL_GREEN
       //           << std::endl

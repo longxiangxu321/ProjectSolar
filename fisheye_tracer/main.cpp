@@ -270,9 +270,17 @@ namespace osc {
       
 
       voxel_dim voxel_dimension = renderer->print_dimension();
-      CFG["voxel_dim_x"] = voxel_dimension.num_x;
-      CFG["voxel_dim_y"] = voxel_dimension.num_y;
-      CFG["voxel_dim_z"] = voxel_dimension.num_z;
+      CFG["result"]["voxel_dim_x"] = voxel_dimension.num_x;
+      CFG["result"]["voxel_dim_y"] = voxel_dimension.num_y;
+      CFG["result"]["voxel_dim_z"] = voxel_dimension.num_z;
+      CFG["result"]["bbox_min"] = {voxel_dimension.bbox_min.x - translation.x, voxel_dimension.bbox_min.y - translation.y, voxel_dimension.bbox_min.z - translation.z};
+      CFG["result"]["bbox_max"] = {voxel_dimension.bbox_max.x - translation.x, voxel_dimension.bbox_max.y - translation.y, voxel_dimension.bbox_max.z - translation.z};
+      auto end = std::chrono::high_resolution_clock::now();
+
+      std::chrono::duration<double, std::milli> elapsed = end - start; // 计算经过的毫秒数
+
+      std::cout << "Total rendering time: " << elapsed.count() << " ms" << std::endl;
+      CFG["result"]["viewshed_rendering_time"] = elapsed.count();
 
       std::ofstream out_json("config.json");
       std::ofstream out_backup_json(config_backup_path);
@@ -282,11 +290,7 @@ namespace osc {
       
 
 
-      auto end = std::chrono::high_resolution_clock::now();
 
-      std::chrono::duration<double, std::milli> elapsed = end - start; // 计算经过的毫秒数
-
-      std::cout << "Total rendering time: " << elapsed.count() << " ms" << std::endl;
 
 
       // std::cout << GDT_TERMINAL_GREEN

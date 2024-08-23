@@ -7,6 +7,24 @@
     "irradiance_model": "isotropic",
     "num_bounces": 1,
     "output_folder_name": "output_20240815_113456",
+    "result": {
+        "bbox_max": [
+            215605.0,
+            495792.5,
+            17.389999389648438
+        ],
+        "bbox_min": [
+            212940.0,
+            493127.5,
+            1.1240005493164063
+        ],
+        "num_timesteps": 8,
+        "shadow_calculation_time": 86.0568,
+        "viewshed_rendering_time": 58412.1829,
+        "voxel_dim_x": 1333,
+        "voxel_dim_y": 1333,
+        "voxel_dim_z": 9
+    },
     "study_area": {
         "data_root": "./data/Heino",
         "end_time": "2023-01-02 00:00:00",
@@ -16,8 +34,5 @@
         "start_time": "2023-01-01 00:00:00",
         "timezone": "Europe/Amsterdam"
     },
-    "voxel_dim_x": 1333,
-    "voxel_dim_y": 1333,
-    "voxel_dim_z": 9,
     "voxel_resolution": 2
 }

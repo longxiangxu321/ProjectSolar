@@ -712,7 +712,7 @@ namespace osc {
     std::cout<<"hemisphere resolution x: "<<launchParams.hemisphere_resolution.x<<std::endl;
     std::cout<<"hemisphere resolution y: "<<launchParams.hemisphere_resolution.y<<std::endl;
 
-    voxel_dim dim = {launchParams.voxel_dim.x, launchParams.voxel_dim.y, launchParams.voxel_dim.z};
+    voxel_dim dim = {launchParams.voxel_dim.x, launchParams.voxel_dim.y, launchParams.voxel_dim.z, launchParams.bbox_min, launchParams.bbox_max};
     return dim;
   }
   

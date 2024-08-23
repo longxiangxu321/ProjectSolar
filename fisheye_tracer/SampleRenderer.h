@@ -38,6 +38,8 @@ namespace osc {
     int num_x;
     int num_y;
     int num_z;
+    vec3f bbox_min;
+    vec3f bbox_max;
   };
   
   /*! a sample OptiX-7 renderer that demonstrates how to set up
