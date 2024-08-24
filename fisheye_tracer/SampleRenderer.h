@@ -68,7 +68,7 @@ namespace osc {
     /*! download the rendered color buffer */
     void downloadPixels(uint32_t h_pixels[]);
     // void downloadIncidentAngles(float h_incident_angles[]);
-    void downloadIncidentAngles(half h_incident_azimuths[], half h_incident_elevations[]);
+    void downloadIncidentFactors(half h_cos_cos[]);
     void downloadHorizonFactors(float h_horizon_factors[]);
     void downloadSVF(int h_svf[]);
 
@@ -157,8 +157,7 @@ namespace osc {
     // float resolution;
 
     CUDABuffer colorBuffer;
-    CUDABuffer incident_azimuthBuffer;
-    CUDABuffer incident_elevationBuffer;
+    CUDABuffer incident_factorBuffer;
     CUDABuffer horizon_factorBuffer;
     CUDABuffer horizon_importanceBuffer; // buffer for normalizing horizon factor
     CUDABuffer sky_view_factorBuffer; // buffer for sky view factor, with shading

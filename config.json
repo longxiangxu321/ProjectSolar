@@ -4,10 +4,10 @@
     "elevation_resolution": 2,
     "epw_file": "heino.epw",
     "global_irradiance_time": 1834.2714636325836,
-    "irradiance_batch_size": 1000,
+    "irradiance_batch_size": 2000,
     "irradiance_model": "isotropic",
     "num_bounces": 1,
-    "output_folder_name": "output_20240823_171118",
+    "output_folder_name": "output_20240824_214316",
     "result": {
         "bbox_max": [
             215605.0,
@@ -17,17 +17,18 @@
         "bbox_min": [
             212940.0,
             493127.5,
-            1.1240005493164063
+            1.1240005493164062
         ],
+        "global_irradiance_time": 28.491953372955322,
         "num_timesteps": 8,
-        "shadow_calculation_time": 0.13216109573841095,
-        "viewshed_rendering_time": 60.91888427734375,
-        "voxel_dim_x": 1333,
-        "voxel_dim_y": 1333,
-        "voxel_dim_z": 9
+        "shadow_calculation_time": 0.06464830040931702,
+        "viewshed_rendering_time": 90.95529174804688,
+        "voxel_dim_x": 445,
+        "voxel_dim_y": 445,
+        "voxel_dim_z": 3
     },
     "study_area": {
-        "data_root": "./data/Heino",
+        "data_root": "./data/Heino_test",
         "end_time": "2023-01-02 00:00:00",
         "frequency": "h",
         "lat": 53.21562567169522,
@@ -35,5 +36,5 @@
         "start_time": "2023-01-01 00:00:00",
         "timezone": "Europe/Amsterdam"
     },
-    "voxel_resolution": 2
+    "voxel_resolution": 6
 }

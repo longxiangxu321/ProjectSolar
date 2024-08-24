@@ -590,8 +590,8 @@ namespace osc {
                     mesh->index.push_back(faces[i]);
                     vec3f normal = normalize(cross(transformedcoords[faces[i].y] - transformedcoords[faces[i].x], transformedcoords[faces[i].z] - transformedcoords[faces[i].x]));
                     mesh->normal.push_back(normal);
-
-                    mesh->globalID.push_back(total_triangles++);
+                    int globalID = co.value()["attributes"]["global_idx"];
+                    mesh->globalID.push_back(globalID);
                     std::string type = "Tree";
                     int surface_type_id = surface_type_map[type];
                     float surface_albedo = surface_albedo_map[type];

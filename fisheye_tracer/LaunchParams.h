@@ -41,8 +41,7 @@ namespace osc {
   struct LaunchParams
   {
     uint32_t *colorBuffer;
-    half *incident_azimuthBuffer;
-    half *incident_elevationBuffer;
+    half *incident_factorBuffer;
     float *horizon_factorBuffer; // buffer for horizon factor, with shading
     float *horizon_importanceBuffer; // buffer for horizon importance, without shading, used for normalization
     int *sky_view_factorBuffer; // buffer for sky view factor, with shading

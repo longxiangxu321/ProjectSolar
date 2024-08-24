@@ -61,10 +61,8 @@ namespace osc {
 
     std::filesystem::path indexFile_path = root_folder / CFG["output_folder_name"] 
                                          /"index_map.dat";
-    std::filesystem::path azimuthFile_path = root_folder / CFG["output_folder_name"]
-                                          /"azimuth_map.dat";
-    std::filesystem::path elevationFile_path = root_folder / CFG["output_folder_name"]
-                                          /"elevation_map.dat";
+    std::filesystem::path cosFile_path = root_folder / CFG["output_folder_name"]
+                                          /"cosine_map.dat";
     std::filesystem::path horizonfactorFile_path = root_folder / CFG["output_folder_name"]
                                           /"horizon_factor_map.dat";
     std::filesystem::path skyviewfactorFile_path = root_folder / CFG["output_folder_name"]
@@ -146,13 +144,12 @@ namespace osc {
       // std::ofstream horizonfactorFile("../horizon_factor_map.dat", std::ios::binary | std::ios::out);
       // std::ofstream skyviewfactorFile("../sky_view_factor_map.dat", std::ios::binary | std::ios::out);
       std::ofstream indexFile(indexFile_path, std::ios::binary | std::ios::out);
-      std::ofstream azimuthFile(azimuthFile_path, std::ios::binary | std::ios::out);
-      std::ofstream elevationFile(elevationFile_path, std::ios::binary | std::ios::out);
+      std::ofstream cosFile(cosFile_path, std::ios::binary | std::ios::out);
       std::ofstream horizonfactorFile(horizonfactorFile_path, std::ios::binary | std::ios::out);
       std::ofstream skyviewfactorFile(skyviewfactorFile_path, std::ios::binary | std::ios::out);
 
 
-      if (!indexFile || !azimuthFile || !elevationFile) {
+      if (!indexFile || !cosFile) {
         std::cerr << "cannot create semantic_map files" << std::endl;
         return 1;
       }
@@ -196,20 +193,18 @@ namespace osc {
         renderer->setCameraGroup(cameras, batch_size, hemisphere_resolution, voxel_resolution);
         renderer->render();
         std::vector<uint32_t> pixels(batch_size*fbSize.x*fbSize.y);
-        std::vector<half> incident_azimuth(batch_size*fbSize.x*fbSize.y);
-        std::vector<half> incident_elevation(batch_size*fbSize.x*fbSize.y);
+        std::vector<half> cosine_factors(batch_size*fbSize.x*fbSize.y*6);
         std::vector<float> horizon_factor(batch_size);
         std::vector<int> sky_view_factor(batch_size);
 
 
         renderer->downloadPixels(pixels.data());
-        renderer->downloadIncidentAngles(incident_azimuth.data(), incident_elevation.data());
+        renderer->downloadIncidentFactors(cosine_factors.data());
         renderer->downloadHorizonFactors(horizon_factor.data());
         renderer->downloadSVF(sky_view_factor.data());
 
         indexFile.write(reinterpret_cast<const char*>(pixels.data()), pixels.size() * sizeof(uint32_t));
-        azimuthFile.write(reinterpret_cast<const char*>(incident_azimuth.data()), incident_azimuth.size() * sizeof(half));
-        elevationFile.write(reinterpret_cast<const char*>(incident_elevation.data()), incident_elevation.size() * sizeof(half));
+        cosFile.write(reinterpret_cast<const char*>(cosine_factors.data()), cosine_factors.size() * sizeof(half));
         horizonfactorFile.write(reinterpret_cast<const char*>(horizon_factor.data()), horizon_factor.size() * sizeof(float));
         skyviewfactorFile.write(reinterpret_cast<const char*>(sky_view_factor.data()), sky_view_factor.size() * sizeof(int));
 
@@ -238,20 +233,18 @@ namespace osc {
       renderer->render();
 
       std::vector<uint32_t> pixels(last_batch_size*fbSize.x*fbSize.y);
-      std::vector<half> incident_azimuth(last_batch_size*fbSize.x*fbSize.y);
-      std::vector<half> incident_elevation(last_batch_size*fbSize.x*fbSize.y);
+      std::vector<half> cosine_factors(last_batch_size*fbSize.x*fbSize.y*6);
       std::vector<float> horizon_factor(last_batch_size);
       std::vector<int> sky_view_factor(last_batch_size);
 
 
       renderer->downloadPixels(pixels.data());
-      renderer->downloadIncidentAngles(incident_azimuth.data(), incident_elevation.data());
+      renderer->downloadIncidentFactors(cosine_factors.data());
       renderer->downloadHorizonFactors(horizon_factor.data());
       renderer->downloadSVF(sky_view_factor.data());
 
       indexFile.write(reinterpret_cast<const char*>(pixels.data()), pixels.size() * sizeof(uint32_t));
-      azimuthFile.write(reinterpret_cast<const char*>(incident_azimuth.data()), incident_azimuth.size() * sizeof(half));
-      elevationFile.write(reinterpret_cast<const char*>(incident_elevation.data()), incident_elevation.size() * sizeof(half));
+      cosFile.write(reinterpret_cast<const char*>(cosine_factors.data()), cosine_factors.size() * sizeof(half));
       horizonfactorFile.write(reinterpret_cast<const char*>(horizon_factor.data()), horizon_factor.size() * sizeof(float));
       skyviewfactorFile.write(reinterpret_cast<const char*>(sky_view_factor.data()), sky_view_factor.size() * sizeof(int));
       delete[] last_cameras;
@@ -260,8 +253,7 @@ namespace osc {
 
 
       indexFile.close();
-      azimuthFile.close();
-      elevationFile.close();
+      cosFile.close();
       horizonfactorFile.close();
       skyviewfactorFile.close();
 

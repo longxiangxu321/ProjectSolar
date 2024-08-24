@@ -640,8 +640,7 @@ namespace osc {
                                              ceil((bbox.upper.z - bbox.lower.z) / resolution));
 
     colorBuffer.resize(numCameras * spliting.x * spliting.y * sizeof(uint32_t));
-    incident_azimuthBuffer.resize(numCameras * spliting.x * spliting.y * sizeof(half));
-    incident_elevationBuffer.resize(numCameras * spliting.x * spliting.y * sizeof(half));
+    incident_factorBuffer.resize(numCameras * spliting.x * spliting.y * 6 * sizeof(half));
 
     horizon_factorBuffer.resize(numCameras * sizeof(float));
     horizon_importanceBuffer.resize(numCameras * sizeof(float));
@@ -655,8 +654,7 @@ namespace osc {
     launchParams.sky_view_factorBuffer = (int*)sky_view_factorBuffer.d_pointer();
 
     launchParams.colorBuffer = (uint32_t*)colorBuffer.d_pointer();
-    launchParams.incident_azimuthBuffer = (half*)incident_azimuthBuffer.d_pointer();
-    launchParams.incident_elevationBuffer = (half*)incident_elevationBuffer.d_pointer();
+    launchParams.incident_factorBuffer = (half*)incident_factorBuffer.d_pointer();
   }
   
 
@@ -667,12 +665,10 @@ namespace osc {
                          launchParams.n_cameras*launchParams.n_azimuth*launchParams.n_elevation);
   }
 
-  void SampleRenderer::downloadIncidentAngles(half h_incident_azimuths[], half h_incident_elevations[])
+  void SampleRenderer::downloadIncidentFactors(half h_cos_cos[])
   {
-    incident_azimuthBuffer.download(h_incident_azimuths,
-                                  launchParams.n_cameras*launchParams.n_azimuth*launchParams.n_elevation);
-    incident_elevationBuffer.download(h_incident_elevations,
-                                  launchParams.n_cameras*launchParams.n_azimuth*launchParams.n_elevation);
+    incident_factorBuffer.download(h_cos_cos,
+                                  launchParams.n_cameras*launchParams.n_azimuth*launchParams.n_elevation*6);
   }
 
   void SampleRenderer::downloadHorizonFactors(float h_horizon_factors[])

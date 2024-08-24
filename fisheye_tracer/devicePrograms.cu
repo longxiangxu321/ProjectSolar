@@ -33,9 +33,13 @@ namespace osc {
   enum { SURFACE_RAY_TYPE=0, RAY_TYPE_COUNT };
   
   struct PRD {
-    float azimuth;
-    float elevation;
     uint32_t voxel_id;
+    float up;
+    float down;
+    float left;
+    float right;
+    float front;
+    float back;
     int mask;
 };
 
@@ -113,16 +117,27 @@ namespace osc {
     
     vec3f voxel_ray_dir = normalize(rayOrigin - voxel_center);
     
-    half azimuth = __float2half(atan2(voxel_ray_dir.y, voxel_ray_dir.x)); // from -180 to 180
-    half elevation = __float2half(atan2(voxel_ray_dir.z, sqrt(voxel_ray_dir.x * voxel_ray_dir.x + voxel_ray_dir.y * voxel_ray_dir.y))); // from -90 to 90
-    
+    // half azimuth = __float2half(atan2(voxel_ray_dir.y, voxel_ray_dir.x)); // from -180 to 180
+    // half elevation = __float2half(atan2(voxel_ray_dir.z, sqrt(voxel_ray_dir.x * voxel_ray_dir.x + voxel_ray_dir.y * voxel_ray_dir.y))); // from -90 to 90
+    float cos_up = dot(voxel_ray_dir, vec3f(0.0f, 0.0f, 1.0f));
+    float cos_down = dot(voxel_ray_dir, vec3f(0.0f, 0.0f, -1.0f));
+    float cos_left = dot(voxel_ray_dir, vec3f(-1.0f, 0.0f, 0.0f));
+    float cos_right = dot(voxel_ray_dir, vec3f(1.0f, 0.0f, 0.0f));
+    float cos_front = dot(voxel_ray_dir, vec3f(0.0f, 1.0f, 0.0f));
+    float cos_back = dot(voxel_ray_dir, vec3f(0.0f, -1.0f, 0.0f));
+
     uint32_t voxel_id = voxel_x + voxel_y * optixLaunchParams.voxel_dim.x + voxel_z * optixLaunchParams.voxel_dim.x * optixLaunchParams.voxel_dim.y;
     
 
     PRD &prd = *(PRD*)getPRD<PRD>();
     
-    prd.azimuth = azimuth;
-    prd.elevation = elevation;
+    prd.up = cos_up;
+    prd.down = cos_down;
+    prd.left = cos_left;
+    prd.right = cos_right;
+    prd.front = cos_front;
+    prd.back = cos_back;
+
     prd.voxel_id = voxel_id;
     prd.mask = 0;
   }
@@ -147,8 +162,12 @@ namespace osc {
     // prd = vec3f(1.f);
     PRD &prd = *(PRD*)getPRD<PRD>();
     
-    prd.azimuth = 181.0f;
-    prd.elevation = 91.0f;
+    prd.up = 0.0f;
+    prd.down = 0.0f;
+    prd.left = 0.0f;
+    prd.right = 0.0f;
+    prd.front = 0.0f;
+    prd.back = 0.0f;
     prd.voxel_id = UINT32_MAX_VALUE;
     prd.mask = 1;
 
@@ -168,14 +187,9 @@ namespace osc {
     // 将屏幕空间坐标转换为球坐标
     int ix = ray_id % optixLaunchParams.n_azimuth;
     int iy = ray_id / optixLaunchParams.n_azimuth;
-    // int ix = ray_id % 360;
-    // int iy = ray_id / 360;
-
 
     float theta = degrees_to_radians(float(ix) * optixLaunchParams.hemisphere_resolution.x);
     float phi = degrees_to_radians(float(iy) * optixLaunchParams.hemisphere_resolution.y);
-    // float theta = screen.x * 2.0f * M_PI;  // 从 0 到 2*PI
-    // float phi = screen.y * 0.5f * M_PI;           // 从 0 到 PI
 
     // 使用球坐标计算射线方向
     float x = sin(phi) * cos(theta);
@@ -213,32 +227,41 @@ namespace osc {
                SURFACE_RAY_TYPE,             // missSBTIndex 
                u0, u1 );
 
-    // const int r = int(255.99f*pixelColorPRD.x);
-    // const int g = int(255.99f*pixelColorPRD.y);
-    // const int b = int(255.99f*pixelColorPRD.z);
-    const float azimuth = pixelColorPRD.azimuth;
-    const float elevation = pixelColorPRD.elevation;
+
     const uint32_t voxel_id = pixelColorPRD.voxel_id;
+    float cos_phi = cos(M_PI/2 - phi);
+    half up = __float2half(pixelColorPRD.up * cos_phi);
+    half down = __float2half(pixelColorPRD.down * cos_phi);
+    half left = __float2half(pixelColorPRD.left * cos_phi);
+    half right = __float2half(pixelColorPRD.right * cos_phi);
+    half front = __float2half(pixelColorPRD.front * cos_phi);
+    half back = __float2half(pixelColorPRD.back * cos_phi);
 
     // and write to frame buffer ...
     // const uint32_t fbIndex = ix+iy*optixLaunchParams.frame.size.x;
     // optixLaunchParams.frame.colorBuffer[fbIndex] = rgba;
     // int offset = optixLaunchParams.batch_offset * optixLaunchParams.n_azimuth * optixLaunchParams.n_elevation;
     const uint32_t fbIndex = ray_id + cam_id * optixLaunchParams.n_azimuth * optixLaunchParams.n_elevation;
-    float importance = pow((1 - fabs(cos(angle_with_horizon))), optixLaunchParams.horizon_gamma);
+    // float importance = pow((1 - fabs(cos(angle_with_horizon))), optixLaunchParams.horizon_gamma);
     // float pixel_horizon_intensity = (pixelColorPRD.mask *importance);
     
 
     // optixLaunchParams.horizon_factorBuffer[cam_id] += 1.0f;
     // optixLaunchParams.horizon_importanceBuffer[cam_id] += 1.0f;
 
-    atomicAdd(&optixLaunchParams.horizon_factorBuffer[cam_id], importance* pixelColorPRD.mask);
-    atomicAdd(&optixLaunchParams.horizon_importanceBuffer[cam_id], importance);
+    // atomicAdd(&optixLaunchParams.horizon_factorBuffer[cam_id], importance* pixelColorPRD.mask);
+    // atomicAdd(&optixLaunchParams.horizon_importanceBuffer[cam_id], importance);
     atomicAdd(&optixLaunchParams.sky_view_factorBuffer[cam_id], pixelColorPRD.mask);
 
     optixLaunchParams.colorBuffer[fbIndex] = voxel_id;
-    optixLaunchParams.incident_azimuthBuffer[fbIndex] = azimuth;
-    optixLaunchParams.incident_elevationBuffer[fbIndex] = elevation;
+
+    const uint32_t cosindex = ray_id * 6 + cam_id * optixLaunchParams.n_azimuth * optixLaunchParams.n_elevation * 6;
+    optixLaunchParams.incident_factorBuffer[cosindex] = up;
+    optixLaunchParams.incident_factorBuffer[cosindex + 1] = down;
+    optixLaunchParams.incident_factorBuffer[cosindex + 2] = left;
+    optixLaunchParams.incident_factorBuffer[cosindex + 3] = right;
+    optixLaunchParams.incident_factorBuffer[cosindex + 4] = front;
+    optixLaunchParams.incident_factorBuffer[cosindex + 5] = back;
     // optixLaunchParams.incident_angleBuffer[fbIndex] = cosDN;
   }
   
