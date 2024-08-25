@@ -119,12 +119,18 @@ namespace osc {
     
     // half azimuth = __float2half(atan2(voxel_ray_dir.y, voxel_ray_dir.x)); // from -180 to 180
     // half elevation = __float2half(atan2(voxel_ray_dir.z, sqrt(voxel_ray_dir.x * voxel_ray_dir.x + voxel_ray_dir.y * voxel_ray_dir.y))); // from -90 to 90
-    float cos_up = dot(voxel_ray_dir, vec3f(0.0f, 0.0f, 1.0f));
-    float cos_down = dot(voxel_ray_dir, vec3f(0.0f, 0.0f, -1.0f));
-    float cos_left = dot(voxel_ray_dir, vec3f(-1.0f, 0.0f, 0.0f));
-    float cos_right = dot(voxel_ray_dir, vec3f(1.0f, 0.0f, 0.0f));
-    float cos_front = dot(voxel_ray_dir, vec3f(0.0f, 1.0f, 0.0f));
-    float cos_back = dot(voxel_ray_dir, vec3f(0.0f, -1.0f, 0.0f));
+    // float cos_up = dot(voxel_ray_dir, vec3f(0.0f, 0.0f, 1.0f));
+    // float cos_down = dot(voxel_ray_dir, vec3f(0.0f, 0.0f, -1.0f));
+    // float cos_left = dot(voxel_ray_dir, vec3f(-1.0f, 0.0f, 0.0f));
+    // float cos_right = dot(voxel_ray_dir, vec3f(1.0f, 0.0f, 0.0f));
+    // float cos_front = dot(voxel_ray_dir, vec3f(0.0f, 1.0f, 0.0f));
+    // float cos_back = dot(voxel_ray_dir, vec3f(0.0f, -1.0f, 0.0f));
+    float cos_up = max(dot(voxel_ray_dir, vec3f(0.0f, 0.0f, 1.0f)), 0.0f);
+    float cos_down = max(dot(voxel_ray_dir, vec3f(0.0f, 0.0f, -1.0f)), 0.0f);
+    float cos_left = max(dot(voxel_ray_dir, vec3f(-1.0f, 0.0f, 0.0f)), 0.0f);
+    float cos_right = max(dot(voxel_ray_dir, vec3f(1.0f, 0.0f, 0.0f)), 0.0f);
+    float cos_front = max(dot(voxel_ray_dir, vec3f(0.0f, 1.0f, 0.0f)), 0.0f);
+    float cos_back = max(dot(voxel_ray_dir, vec3f(0.0f, -1.0f, 0.0f)), 0.0f);
 
     uint32_t voxel_id = voxel_x + voxel_y * optixLaunchParams.voxel_dim.x + voxel_z * optixLaunchParams.voxel_dim.x * optixLaunchParams.voxel_dim.y;
     

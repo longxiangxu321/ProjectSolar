@@ -143,11 +143,13 @@ std::vector<GridPoint> create_point_grid(const Model& citymodel, float sampling_
 
 void save_point_grid(const std::vector<GridPoint> &grid_n, const vec3f &translation, const std::string &filename) {
     std::ofstream output_stream(filename);
+    int index = 0;
     for (const auto &gp : grid_n) {
         output_stream << std::setprecision(6) 
         << gp.position.x - translation.x << " " << gp.position.y - translation.y << " " << gp.position.z - translation.z<< " "
         << gp.triangle_info.direction.x << " "<< gp.triangle_info.direction.y << " "<< gp.triangle_info.direction.z << " "
-        << gp.triangle_info.surface_albedo << " "<< gp.triangle_info.surface_type<<"\n";
+        << gp.triangle_info.surface_albedo << " "<< gp.triangle_info.surface_type<< " " << index<<"\n";
+        index++;
     }
     output_stream.close();
 }

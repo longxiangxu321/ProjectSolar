@@ -249,6 +249,7 @@ namespace osc {
                 for (auto &g: co.value()["geometry"]) {
                     for (int i = 0; i< g["boundaries"][0].size(); i++) {
                         std::vector<std::vector<int>> triangle = g["boundaries"][0][i];
+                        std::string surf_type = g["semantics"]["surfaces"][i]["type"];
                         if (triangle[0].size() != 3 || 
                             triangle[0][0]==triangle[0][1] || 
                             triangle[0][0]==triangle[0][2] || 
@@ -256,6 +257,9 @@ namespace osc {
                             int gmlid_int = g["semantics"]["surfaces"][i]["global_idx"];
 
                             std::cout<<"a triangle is not valid, identifier: "<<gmlid_int<<std::endl;
+                            continue;
+                        }
+                        else if (targetTypes.find(surf_type) == targetTypes.end()) {
                             continue;
                         }  
                         else{
@@ -367,7 +371,6 @@ namespace osc {
             if (co.value()["type"] == "BuildingPart" || co.value()["type"] == "Building") {
                 vertexMap.clear();
                 mesh = new TriangleMesh;
-
                 for (auto &g: co.value()["geometry"]) {
                     if (g["lod"] != "2") {
                             continue;
@@ -375,6 +378,7 @@ namespace osc {
                     else {
                     for (int i = 0; i< g["boundaries"].size(); i++) {
                         std::vector<std::vector<int>> triangle = g["boundaries"][i];
+                        std::string surf_type = g["semantics"]["surfaces"][i]["type"];
                         if (triangle[0].size() != 3 || 
                             triangle[0][0]==triangle[0][1] || 
                             triangle[0][0]==triangle[0][2] || 
@@ -383,6 +387,9 @@ namespace osc {
                             int gmlid_int = g["semantics"]["surfaces"][i]["global_idx"];
 
                             std::cout<<"a triangle is not valid, identifier: "<<gmlid_int<<std::endl;
+                            continue;
+                        }
+                        else if (targetTypes.find(surf_type) == targetTypes.end()) {
                             continue;
                         }  
                         else {

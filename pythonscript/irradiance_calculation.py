@@ -213,7 +213,7 @@ def batch_update_grid_point_irradiance(point_grid, voxel_grid, irradiance, index
     print("start bouncing")
     print("batch size", batch_size)
     num_points = point_grid.shape[0]
-    updated_irradiance = np.zeros_like(irradiance)
+    updated_irradiance = irradiance.copy()
     num_time_steps = irradiance.shape[1]
 
     # index_map_shape = index_map.shape
@@ -403,6 +403,7 @@ if __name__=="__main__":
     # weather_data = np.random.randint(0, 1000, size=(solar_position.shape[0], 3))
     epw_filename = os.path.join(folder_path, CONFIG['epw_file'])
     weather_data = obtain_epw(epw_filename, solar_position_path)
+    np.save(os.path.join(data_root, 'weather_data.npy'), weather_data)
 
     svf_new_shape = svf_data[:,np.newaxis]
     svf_map = svf_new_shape.astype(np.float32)/num_samples
@@ -414,16 +415,6 @@ if __name__=="__main__":
     print("Direct beam and sky diffuse irradiance calculated")
     irradiance = direct_irradiance + diffuse_irradiance
 
-    # first_voxel_grid = pd_integrate_voxel_info(point_grid, irradiance, voxel_dimension, voxel_size)
-    # unique_shapes = first_voxel_grid['irradiance'].apply(lambda x: x.shape).unique()
-    # updated_irradiance_1 = batch_update_grid_point_irradiance(point_grid, first_voxel_grid, irradiance, index_map, azimuth_map, elevation_map, num_samples)
-
-    # print(np.unique(updated_irradiance_1))
-
-    # lp = LineProfiler()
-    # lp_wrapper = lp(batch_update_grid_point_irradiance)
-    # lp_wrapper(point_grid, first_voxel_grid, irradiance, index_map, azimuth_map, elevation_map, num_samples, batch_size, albedo)
-    # lp.print_stats()
 
     irradiance_list = [irradiance]
 
