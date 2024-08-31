@@ -15,6 +15,7 @@ namespace osc {
         uint32_t surf_gmlid;
         int surface_type;
         float surface_albedo;
+        float triangle_area;
     };
 
 
@@ -22,10 +23,11 @@ namespace osc {
     struct GridPoint {
     vec3f position;
     Triangle_info triangle_info;
+    float area;
     // std::vector<vec3> hemisphere_samples;
 
     GridPoint() = default;
-    GridPoint(const vec3f ori, const Triangle_info info): position(ori), triangle_info(info) {}
+    GridPoint(const vec3f ori, const Triangle_info info, const float point_area): position(ori), triangle_info(info), area(point_area) {}
     };
 
 

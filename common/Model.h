@@ -47,6 +47,8 @@ namespace osc {
     Model *loadCityJSON(const std::string &jsonFile);
 
     Model *loadWeatherStation(const std::string &jsonFile);
+
+    Model *loadTUDelft(const std::string &jsonFile);
     
 
 }

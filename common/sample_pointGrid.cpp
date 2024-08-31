@@ -27,6 +27,10 @@ void calculate_mass_center(const vec3f &A, const vec3f &B, const vec3f &C, const
         vec3f position = vec3f(vo.x + triangle_info.direction.x * 0.01, 
                                 vo.y + triangle_info.direction.y * 0.01, 
                                 vo.z + triangle_info.direction.z * 0.01);
+        
+        float gp_area = triangle_info.triangle_area/pow(4,splits);
+        if (current_depth > splits) gp_area = triangle_info.triangle_area/pow(4, current_depth);
+
         // std::cout << vo.z << std::endl;
 
         // output_stream << std::setprecision(10) << position.x << " " 
@@ -34,7 +38,7 @@ void calculate_mass_center(const vec3f &A, const vec3f &B, const vec3f &C, const
         // << direction.x << " "<< direction.y << " "<< direction.z << " "<<surface_type<<"\n";
         
         // vec3f normal = vec3(direction.x(), direction.y(), direction.z());
-        GridPoint gp(position, triangle_info);
+        GridPoint gp(position, triangle_info, gp_area);
 
         // std::vector<vec3> hemisphere_samples = hemisphere_sampling(gp.normal, 5);
         // gp.hemisphere_samples = hemisphere_samples;
@@ -106,8 +110,7 @@ std::vector<GridPoint> create_point_grid(const Model& citymodel, float sampling_
                 vec3f side0 = v1 - v0;
                 vec3f side1 = v2 - v0;
 
-
-                
+                if (v0==v1 || v1==v2 || v2==v0) continue;
 
                 double triangle_area = length(cross(side0,side1)) / 2;
                 // std::cout<<triangle_area<<std::endl;
@@ -123,8 +126,9 @@ std::vector<GridPoint> create_point_grid(const Model& citymodel, float sampling_
                 int surf_gmlid = (*it)->globalID[triangle_index];
                 int surface_type = (*it)->surfaceType[triangle_index];
                 float surface_albedo = (*it)->albedo[triangle_index];
+                vec3f normal = (*it)->normal[triangle_index];
 
-                Triangle_info triangle_info = {(*it)->normal[triangle_index], surf_gmlid, surface_type, surface_albedo};
+                Triangle_info triangle_info = {normal, surf_gmlid, surface_type, surface_albedo, triangle_area};
 
                 calculate_mass_center(v0, v1, v2, num_s, grid_current, 0, num_s+2, triangle_info);
 
@@ -148,7 +152,7 @@ void save_point_grid(const std::vector<GridPoint> &grid_n, const vec3f &translat
         output_stream << std::setprecision(6) 
         << gp.position.x - translation.x << " " << gp.position.y - translation.y << " " << gp.position.z - translation.z<< " "
         << gp.triangle_info.direction.x << " "<< gp.triangle_info.direction.y << " "<< gp.triangle_info.direction.z << " "
-        << gp.triangle_info.surface_albedo << " "<< gp.triangle_info.surface_type<< " " << index<<"\n";
+        << gp.triangle_info.surface_albedo << " "<< gp.area<< " " << index<<"\n";
         index++;
     }
     output_stream.close();

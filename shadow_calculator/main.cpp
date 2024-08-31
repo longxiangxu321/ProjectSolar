@@ -83,7 +83,7 @@ namespace osc {
         // 读取第一个 entry
         const auto& first_entry = *dir_iter;
         if (first_entry.is_regular_file()) {
-            model = loadWeatherStation(first_entry.path().string());
+            model = loadTUDelft(first_entry.path().string());
             std::cout<<GDT_TERMINAL_GREEN<<"Model loaded"<<GDT_TERMINAL_DEFAULT<<std::endl;
 
             

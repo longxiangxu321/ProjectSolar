@@ -647,5 +647,301 @@ namespace osc {
 
     }
 
+    Model *loadTUDelft(const std::string &jsonFile)
+    {
+
+        Model *model = new Model;
+        std::unordered_set<std::string> targetTypes = {"WallSurface", "RoofSurface"};
+
+        // std::map<int, int> vertexMap;
+
+        std::fstream input(jsonFile);
+        json j;
+        input >> j;
+        input.close();
+        std::vector<vec3f> lspts = get_coordinates(j, true);
+        for (auto const &lspt:lspts) {
+            model->bounds.extend(lspt);
+        }
+
+        int building_index = 0;
+        int total_triangles = 0;
+        int TIN_index = 0;
+        int Tree_index = 0;
+
+        TriangleMesh *mesh = nullptr;
+        std::map<int, int> vertexMap;
+
+        for (auto &co: j["CityObjects"].items()) {
+            if (co.value()["type"] == "BuildingPart" || co.value()["type"] == "Building") {
+                vertexMap.clear();
+                mesh = new TriangleMesh;
+                for (auto &g: co.value()["geometry"]) {
+                    for (int i = 0; i< g["boundaries"].size(); i++) {
+                        std::vector<std::vector<int>> triangle = g["boundaries"][i];
+                        std::string surf_type = g["semantics"]["surfaces"][i]["type"];
+                        if (triangle[0].size() != 3 || 
+                            triangle[0][0]==triangle[0][1] || 
+                            triangle[0][0]==triangle[0][2] || 
+                            triangle[0][1]==triangle[0][2])
+                        {
+                            int gmlid_int = g["semantics"]["surfaces"][i]["global_idx"];
+
+                            std::cout<<"a triangle is not valid, identifier: "<<gmlid_int<<std::endl;
+                            continue;
+                        }
+                        else if (targetTypes.find(surf_type) == targetTypes.end()) {
+                            continue;
+                        }  
+                        else {
+                            // std::string surf_type = g["semantics"]["surfaces"][i]["type"];
+                            // if (targetTypes.find(surf_type) != targetTypes.end()) {
+                                int gmlid_int = g["semantics"]["surfaces"][i]["global_idx"];
+                                int global_v0 = triangle[0][0];
+                                int global_v1 = triangle[0][1];
+                                int global_v2 = triangle[0][2];
+
+                                int original_size = vertexMap.size();
+
+                                int local_v0 = addOrGetVertexIndex(vertexMap, global_v0);
+
+                                if (original_size != vertexMap.size()) {
+                                    mesh->vertex.push_back(lspts[global_v0]);
+                                }
+
+                                original_size = vertexMap.size();
+                                int local_v1 = addOrGetVertexIndex(vertexMap, global_v1);
+                                if (original_size != vertexMap.size()) {
+                                    mesh->vertex.push_back(lspts[global_v1]);
+                                }
+
+                                original_size = vertexMap.size();
+                                int local_v2 = addOrGetVertexIndex(vertexMap, global_v2);
+                                if (original_size != vertexMap.size()) {
+                                    mesh->vertex.push_back(lspts[global_v2]);
+                                }
+                                // std::cout<<"local_v0: "<<local_v0<<" local_v1: "<<local_v1<<" local_v2: "<<local_v2<<std::endl;
+
+                                mesh->index.push_back(vec3i(local_v0, local_v1, local_v2));
+                                vec3f vx = lspts[global_v0];
+                                vec3f vy = lspts[global_v1];
+                                vec3f vz = lspts[global_v2];
+                                vec3f normal = normalize(cross(vy - vx, vz - vx));
+                                mesh->normal.push_back(normal);
+                                mesh->globalID.push_back(gmlid_int);
+                                std::string type = g["semantics"]["surfaces"][i]["type"];
+                                int surface_type_id = surface_type_map[type];
+                                float surface_albedo = surface_albedo_map[type];
+                                mesh->surfaceType.push_back(surface_type_id);
+                                mesh->albedo.push_back(surface_albedo);
+                                total_triangles++;
+                        }
+  
+                        }
+                    
+                }
+                
+                
+                
+                mesh->diffuse = gdt::randomColor(building_index);
+
+                
+                assert(mesh->vertex.size() == vertexMap.size());
+                assert(mesh->index.size() == mesh->normal.size());
+                assert(mesh->index.size() == mesh->globalID.size());
+
+                
+                if (mesh->vertex.size() > 0 && mesh->index.size() > 0){
+                    model->meshes.push_back(mesh);
+                    building_index++;
+                }   else {
+                    std::cout<<"Empty mesh, deleting building"<< building_index <<std::endl;
+                    delete mesh;
+                }
+            }
+
+            else if (co.value()["type"] == "TINRelief") {
+                vertexMap.clear();
+                mesh = new TriangleMesh;
+                for (auto &g: co.value()["geometry"]) {
+                    for (int i = 0; i< g["boundaries"].size(); i++) {
+                        std::vector<std::vector<int>> triangle = g["boundaries"][i];
+                        if (triangle[0].size() != 3 || 
+                            triangle[0][0]==triangle[0][1] || 
+                            triangle[0][0]==triangle[0][2] || 
+                            triangle[0][1]==triangle[0][2])
+                            {
+                                int gmlid_int = g["semantics"]["surfaces"][i]["global_idx"];
+
+                                // std::cout<<"a TIN is not valid, identifier: "<<gmlid_int<<std::endl;
+                                continue;
+                            }  
+                        else {
+                                int gmlid_int = g["semantics"]["surfaces"][i]["global_idx"];
+                                int global_v0 = triangle[0][0];
+                                int global_v1 = triangle[0][1];
+                                int global_v2 = triangle[0][2];
+
+                                int original_size = vertexMap.size();
+
+                                int local_v0 = addOrGetVertexIndex(vertexMap, global_v0);
+
+                                if (original_size != vertexMap.size()) {
+                                    mesh->vertex.push_back(lspts[global_v0]);
+                                }
+
+                                original_size = vertexMap.size();
+                                int local_v1 = addOrGetVertexIndex(vertexMap, global_v1);
+                                if (original_size != vertexMap.size()) {
+                                    mesh->vertex.push_back(lspts[global_v1]);
+                                }
+
+                                original_size = vertexMap.size();
+                                int local_v2 = addOrGetVertexIndex(vertexMap, global_v2);
+                                if (original_size != vertexMap.size()) {
+                                    mesh->vertex.push_back(lspts[global_v2]);
+                                }
+                                // std::cout<<"local_v0: "<<local_v0<<" local_v1: "<<local_v1<<" local_v2: "<<local_v2<<std::endl;
+
+                                mesh->index.push_back(vec3i(local_v0, local_v1, local_v2));
+                                vec3f vx = lspts[global_v0];
+                                vec3f vy = lspts[global_v1];
+                                vec3f vz = lspts[global_v2];
+                                vec3f normal = normalize(cross(vy - vx, vz - vx));
+                                mesh->normal.push_back(normal);
+                                mesh->globalID.push_back(gmlid_int);
+                                std::string type = "TIN";
+                                int surface_type_id = surface_type_map[type];
+                                float surface_albedo = surface_albedo_map[type];
+                                mesh->surfaceType.push_back(surface_type_id);
+                                mesh->albedo.push_back(surface_albedo);
+                                total_triangles++;
+                        }                
+                    }
+                    
+                }
+                
+                mesh->diffuse = gdt::randomColor(TIN_index);
+ 
+                
+                assert(mesh->vertex.size() == vertexMap.size());
+                assert(mesh->index.size() == mesh->normal.size());
+                assert(mesh->index.size() == mesh->globalID.size());
+
+                
+                if (mesh->vertex.size() > 0 && mesh->index.size() > 0){
+                    model->meshes.push_back(mesh);
+                    TIN_index++;
+                }   else {
+                    std::cout<<"Empty mesh, deleting TIN terrain"<< TIN_index <<std::endl;
+                    delete mesh;
+                }
+                
+            }
+
+            else if (co.value()["type"] == "SolitaryVegetationObject") {
+                vertexMap.clear();
+                mesh = new TriangleMesh;
+
+
+                std::array<float, 16> transformation_matrix;
+                for (int i = 0; i < 16; ++i) {
+                    transformation_matrix[i] = co.value()["geometry"][0]["transformationMatrix"][i].get<float>();
+                }
+
+                std::array<float, 3> translate_arr;
+                for (int i = 0; i < 3; ++i) {
+                    translate_arr[i] = co.value()["geographicalExtent"][i].get<float>();
+                }
+
+                std::vector<vec3f> transformedcoords = transformMesh(transformation_matrix, translate_arr);
+
+
+
+                for (int i = 0; i < transformedcoords.size(); i++) {
+                    mesh->vertex.push_back(transformedcoords[i]);
+                }
+
+                const std::vector<vec3i> faces = {
+                    vec3i(4, 1, 2),
+                    vec3i(1, 4, 0),
+                    vec3i(3, 4, 2),
+                    vec3i(4, 3, 0),
+                    vec3i(4, 6, 7),
+                    vec3i(6, 4, 5),
+                    vec3i(8, 4, 7),
+                    vec3i(4, 8, 5),
+                    vec3i(5, 13, 14),
+                    vec3i(13, 5, 12),
+                    vec3i(15, 5, 14),
+                    vec3i(5, 8, 12),
+                    vec3i(8, 11, 12),
+                    vec3i(11, 8, 10),
+                    vec3i(8, 9, 10),
+                    vec3i(8, 5, 4),
+                    vec3i(0, 19, 20),
+                    vec3i(19, 0, 12),
+                    vec3i(21, 0, 20),
+                    vec3i(0, 3, 12),
+                    vec3i(3, 18, 12),
+                    vec3i(18, 3, 17),
+                    vec3i(3, 16, 17),
+                    vec3i(3, 0, 4)
+                };
+
+                for (int i = 0; i < faces.size(); i++) {
+                    mesh->index.push_back(faces[i]);
+                    vec3f normal = normalize(cross(transformedcoords[faces[i].y] - transformedcoords[faces[i].x], transformedcoords[faces[i].z] - transformedcoords[faces[i].x]));
+                    mesh->normal.push_back(normal);
+                    int globalID = co.value()["attributes"]["global_idx"];
+                    mesh->globalID.push_back(globalID);
+                    std::string type = "Tree";
+                    int surface_type_id = surface_type_map[type];
+                    float surface_albedo = surface_albedo_map[type];
+                    mesh->surfaceType.push_back(surface_type_id);
+                    mesh->albedo.push_back(surface_albedo);
+                    total_triangles++;
+                }
+
+
+
+
+                
+                mesh->diffuse = gdt::randomColor(Tree_index);
+ 
+                
+                // assert(mesh->vertex.size() == vertexMap.size());
+                // assert(mesh->index.size() == mesh->normal.size());
+                // assert(mesh->index.size() == mesh->globalID.size());
+
+                
+                if (mesh->vertex.size() > 0 && mesh->index.size() > 0){
+                    model->meshes.push_back(mesh);
+                    Tree_index++;
+                }   else {
+                    std::cout<<"Empty mesh, deleting Tree"<< Tree_index <<std::endl;
+                    delete mesh;
+                }
+                
+            }
+        }
+
+        
+
+
+
+        std::cout<<"bouding box low "<<model->bounds.lower.x<<" "<<model->bounds.lower.y<<" "<<model->bounds.lower.z<<std::endl;
+        std::cout<<"bouding box high "<<model->bounds.upper.x<<" "<<model->bounds.upper.y<<" "<<model->bounds.upper.z<<std::endl;
+        std::cout<<"Total building num " << building_index<<std::endl;
+        std::cout<<"Total TIN num " << TIN_index<<std::endl;
+        std::cout<<"Total Tree num " << Tree_index<<std::endl;
+        std::cout<<"Total triangle num " << total_triangles<<std::endl;
+        std::cout<<"Total vertex num " << lspts.size()<<std::endl;
+        model->original_center = model->bounds.center();
+        return model;
+
+
+    }
+
     }
 

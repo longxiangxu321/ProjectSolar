@@ -20,7 +20,7 @@ def pd_integrate_voxel_info(point_grid, irradiance_vals, voxel_dim, voxel_size, 
     voxel_grid = {}
     # bbox_min = np.min(point_grid[:, :3], axis=0)
     
-    def compute_intensity_for_face(normals, face_normal, albedos, irradiance_values):
+    def compute_intensity_for_face(normals, face_normal, albedos, areas, irradiance_values):
         """
         irradiance_values: shape (N, M), representing the irradiance values for each point in M timesteps.
         normals: shape (N, 3), representing the normal vectors of each point.
@@ -31,15 +31,17 @@ def pd_integrate_voxel_info(point_grid, irradiance_vals, voxel_dim, voxel_size, 
 
         valid_indices = normals @ face_normal > 0
         valid_normals = normals[valid_indices]
+        valid_areas = areas[valid_indices]
+        
         normalized_normals = valid_normals / np.linalg.norm(valid_normals, axis=1, keepdims=True)
         normalized_face_normal = face_normal / np.linalg.norm(face_normal)
         valid_irradiance_values = irradiance_values[valid_indices]
 
         intensity_contributions = valid_irradiance_values * ((albedos[valid_indices] * (normalized_normals @ normalized_face_normal))[:, np.newaxis])
         
-        
+        normalized_ratio = valid_areas / np.sum(valid_areas)
         if len(intensity_contributions) > 0:
-            intensity = np.mean(intensity_contributions, axis=0)
+            intensity = np.sum(intensity_contributions * normalized_ratio[:, np.newaxis], axis=0)
         else:
             intensity = np.zeros(irradiance_values.shape[1])
         
@@ -50,10 +52,11 @@ def pd_integrate_voxel_info(point_grid, irradiance_vals, voxel_dim, voxel_size, 
         voxel_ids = ((point_grid[i, :3] - bbox_min) / voxel_size).astype(int)
         voxel_idx = voxel_ids[0] + voxel_ids[1] * voxel_dim[0] + voxel_ids[2] * voxel_dim[0] * voxel_dim[1]
         if voxel_idx not in voxel_grid:
-            voxel_grid[voxel_idx] = {'normals': [], 'irradiance': [], 'albedos':[]}
+            voxel_grid[voxel_idx] = {'normals': [], 'irradiance': [], 'albedos':[], 'areas': []}
         voxel_grid[voxel_idx]['normals'].append(point_grid[i, 3:6])
         voxel_grid[voxel_idx]['irradiance'].append(np.array(irradiance_vals[i]))
         voxel_grid[voxel_idx]['albedos'].append(point_grid[i, 6])
+        voxel_grid[voxel_idx]['areas'].append(point_grid[i, 7])
 
     data = []
     data.append({
@@ -62,16 +65,18 @@ def pd_integrate_voxel_info(point_grid, irradiance_vals, voxel_dim, voxel_size, 
     })
     
     for voxel_idx, voxel_data in voxel_grid.items():
-        normals = np.array(voxel_data['normals'])
-        albedos = np.array(voxel_data['albedos'])
-        irradiance_value = np.array(voxel_data['irradiance'])
-
-        up_intensity= compute_intensity_for_face(normals, np.array([0, 0, 1]), albedos, irradiance_value)
-        down_intensity = compute_intensity_for_face(normals, np.array([0, 0, -1]), albedos, irradiance_value)
-        left_intensity= compute_intensity_for_face(normals, np.array([-1, 0, 0]), albedos, irradiance_value)
-        right_intensity = compute_intensity_for_face(normals, np.array([1, 0, 0]), albedos, irradiance_value)
-        front_intensity = compute_intensity_for_face(normals, np.array([0, -1, 0]), albedos, irradiance_value)
-        back_intensity = compute_intensity_for_face(normals, np.array([0, 1, 0]), albedos, irradiance_value)
+        up_intensity= compute_intensity_for_face(np.array(voxel_data['normals']), np.array([0, 0, 1]), 
+                                                 np.array(voxel_data['albedos']),np.array(voxel_data['areas']),  np.array(voxel_data['irradiance']))
+        down_intensity = compute_intensity_for_face(np.array(voxel_data['normals']), np.array([0, 0, -1]), 
+                                                    np.array(voxel_data['albedos']), np.array(voxel_data['areas']),  np.array(voxel_data['irradiance']))
+        left_intensity= compute_intensity_for_face(np.array(voxel_data['normals']), np.array([-1, 0, 0]), 
+                                                   np.array(voxel_data['albedos']), np.array(voxel_data['areas']),  np.array(voxel_data['irradiance']))
+        right_intensity = compute_intensity_for_face(np.array(voxel_data['normals']), np.array([1, 0, 0]), 
+                                                     np.array(voxel_data['albedos']), np.array(voxel_data['areas']),  np.array(voxel_data['irradiance']))
+        front_intensity = compute_intensity_for_face(np.array(voxel_data['normals']), np.array([0, -1, 0]), 
+                                                     np.array(voxel_data['albedos']), np.array(voxel_data['areas']),  np.array(voxel_data['irradiance']))
+        back_intensity = compute_intensity_for_face(np.array(voxel_data['normals']), np.array([0, 1, 0]), 
+                                                    np.array(voxel_data['albedos']), np.array(voxel_data['areas']),  np.array(voxel_data['irradiance']))
         data.append({
             'voxel_idx': voxel_idx,
             'intensities': np.array([up_intensity, down_intensity, left_intensity, right_intensity, front_intensity, back_intensity], dtype=np.float32)
