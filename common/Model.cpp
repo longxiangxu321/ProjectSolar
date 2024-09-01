@@ -3,6 +3,13 @@
 #include <array>
 
 namespace osc {
+    struct vec4_type {
+        int x;
+        int y;
+        int z;
+        std::string type;
+        vec4_type(int x, int y, int z, std::string type) : x(x), y(y), z(z), type(type) {}
+    };
 
     std::map<std::string, int> createSurfaceTypeMap() {
     std::map<std::string, int> surface_type_map;
@@ -11,13 +18,14 @@ namespace osc {
     surface_type_map["GroundSurface"] = 2;
     surface_type_map["TIN"] = 3;
     surface_type_map["Tree"] = 4;
+    surface_type_map["Window"] = 5;
     return surface_type_map;
     }
 
     std::map<std::string, int> surface_type_map = createSurfaceTypeMap();
-    std::map<std::string, float> surface_albedo_map = {{"WallSurface", 0.2}, 
-                                    {"RoofSurface", 0.1}, {"GroundSurface", 0.2}, 
-                                    {"TIN", 0.2}, {"Tree", 0.2}};
+    std::map<std::string, float> surface_albedo_map = {{"WallSurface", 0.7}, 
+                                    {"RoofSurface", 0.2}, {"GroundSurface", 0.2}, 
+                                    {"TIN", 0.2}, {"Tree", 0.3}, {"Window", 0.3}};
 
     std::vector<vec3f> transformMesh(const std::array<float, 16>& matrix, const std::array<float, 3>& translate) {
         const std::vector<vec3f> mesh = {
@@ -194,6 +202,70 @@ namespace osc {
 
     }
 
+
+    // void loadTUDOBJ(const std::string &objFile)
+    // {
+    //         Model *model = new Model;
+    //         std::ifstream input_stream;
+    //         input_stream.open(objFile);
+    //         std::vector<vec3f> points;
+    //         std::vector<vec3i> wall_surfaces;
+    //         std::vector<vec3i> roof_surfaces;
+    //         std::vector<vec3i> window_surfaces;
+    //         std::vector<vec3i> vegetation_surfaces;
+    //         std::vector<vec3i>* current_surfaces = nullptr;
+
+    //         if (input_stream.is_open()) {
+    //             std::cout << "Reading " << objFile << std::endl;
+    //             std::string line;
+    //             while (std::getline(input_stream, line)) {
+    //                 if (line[0] == 'v' && line[1] == ' ') {
+    //                     double x,y,z;
+    //                     std::stringstream ss(line);
+    //                     std::string temp;
+    //                     ss >> temp >> x >> y >> z;
+    //                     double sx = x;
+    //                     double sy = y;
+    //                     points.push_back(vec3f(sx, sy, z));
+    //                     model->bounds.extend(vec3f(sx, sy, z));
+    //                 }
+    //                 if (line[0] == 'u') {
+    //                     std::stringstream ss(line);
+    //                     std::string temp, material;
+    //                     ss >> temp >> material;
+    //                     std::cout << "material: " << material << std::endl;
+
+    //                     if (material == "material_0") {
+    //                         current_surfaces = &wall_surfaces;
+    //                     } else if (material == "material_1") {
+    //                         current_surfaces = &roof_surfaces;
+    //                     } else if (material == "material_2") {
+    //                         current_surfaces = &window_surfaces;
+    //                     } else if (material == "material_3") {
+    //                         current_surfaces = &vegetation_surfaces;
+    //                     }
+    //                 }
+    //                 if (line[0] == 'f') {
+    //                     unsigned long v0, v1, v2;
+    //                     std::stringstream ss(line);
+    //                     std::string temp;
+    //                     ss >> temp >> v0 >> v1 >> v2;
+
+    //                     int global_v0 = v0 -1;
+    //                     int global_v1 = v1 -1;
+    //                     int global_v2 = v2 -1;
+    //                     if (current_surfaces) {
+    //                         current_surfaces->push_back(vec3i(global_v0, global_v1, global_v2));
+    //                     }
+    //                 }
+    //                 else {
+    //                     continue;
+    //                 }
+    //             }
+    //         }
+
+
+    // }
 
     
     std::vector<vec3f> get_coordinates(const json& j, bool translate) {
@@ -647,7 +719,7 @@ namespace osc {
 
     }
 
-    Model *loadTUDelft(const std::string &jsonFile)
+    Model *loadTUDelft(const std::string &jsonFile, const std::string &objFile)
     {
 
         Model *model = new Model;
@@ -672,9 +744,15 @@ namespace osc {
         TriangleMesh *mesh = nullptr;
         std::map<int, int> vertexMap;
 
+        int max_global_idx = 0;
+
         for (auto &co: j["CityObjects"].items()) {
             if (co.value()["type"] == "BuildingPart" || co.value()["type"] == "Building") {
                 vertexMap.clear();
+                if (co.key() == "NL.IMBAG.Pand.0503100000025162" || co.key() == "NL.IMBAG.Pand.0503100000031391") {
+                    std::cout<<"Skipping building: "<<co.key()<<std::endl;
+                   continue;
+                }
                 mesh = new TriangleMesh;
                 for (auto &g: co.value()["geometry"]) {
                     for (int i = 0; i< g["boundaries"].size(); i++) {
@@ -729,6 +807,7 @@ namespace osc {
                                 vec3f normal = normalize(cross(vy - vx, vz - vx));
                                 mesh->normal.push_back(normal);
                                 mesh->globalID.push_back(gmlid_int);
+                                max_global_idx = std::max(max_global_idx, gmlid_int);
                                 std::string type = g["semantics"]["surfaces"][i]["type"];
                                 int surface_type_id = surface_type_map[type];
                                 float surface_albedo = surface_albedo_map[type];
@@ -810,6 +889,7 @@ namespace osc {
                                 vec3f normal = normalize(cross(vy - vx, vz - vx));
                                 mesh->normal.push_back(normal);
                                 mesh->globalID.push_back(gmlid_int);
+                                max_global_idx = std::max(max_global_idx, gmlid_int);
                                 std::string type = "TIN";
                                 int surface_type_id = surface_type_map[type];
                                 float surface_albedo = surface_albedo_map[type];
@@ -895,6 +975,7 @@ namespace osc {
                     mesh->normal.push_back(normal);
                     int globalID = co.value()["attributes"]["global_idx"];
                     mesh->globalID.push_back(globalID);
+                    max_global_idx = std::max(max_global_idx, globalID);
                     std::string type = "Tree";
                     int surface_type_id = surface_type_map[type];
                     float surface_albedo = surface_albedo_map[type];
@@ -927,8 +1008,113 @@ namespace osc {
         }
 
         
+        std::ifstream input_stream;
+        input_stream.open(objFile);
+        std::vector<vec3f> points;
+
+        std::vector<vec4_type> surfaces;
+        std::string currentSurfaceType;
+
+        if (input_stream.is_open()) {
+            std::cout << "Reading " << objFile << std::endl;
+            std::string line;
+            while (std::getline(input_stream, line)) {
+                if (line[0] == 'v' && line[1] == ' ') {
+                    double x,y,z;
+                    std::stringstream ss(line);
+                    std::string temp;
+                    ss >> temp >> x >> y >> z;
+                    double sx = x;
+                    double sy = y;
+                    points.push_back(vec3f(sx, sy, z));
+                    model->bounds.extend(vec3f(sx, sy, z));
+                }
+                if (line[0] == 'u') {
+                    std::stringstream ss(line);
+                    std::string temp, material;
+                    ss >> temp >> material;
+
+                    if (material == "material_0") {
+                        currentSurfaceType = "WallSurface";
+                    } else if (material == "material_1") {
+                        currentSurfaceType = "RoofSurface";
+                    } else if (material == "material_2") {
+                        currentSurfaceType = "Window";
+                    } else if (material == "material_3") {
+                        currentSurfaceType = "Tree";
+                    } else {
+                        currentSurfaceType = "Unknown";  // 未知的 material
+                    }
+                }
+                if (line[0] == 'f') {
+                    unsigned long v0, v1, v2;
+                    char slash;
+
+                    std::stringstream ss(line);
+                    std::string temp;
+                    ss >> temp >> v0 >> v1 >> v2;
+
+                    int global_v0 = v0 - 1;
+                    int global_v1 = v1 - 1;
+                    int global_v2 = v2 - 1;
+                    if (currentSurfaceType != "Unknown") {
+                        surfaces.emplace_back(global_v0, global_v1, global_v2, currentSurfaceType);
+                    }
+                }
+                else {
+                    continue;
+                }
+            }
+        }
+
+        mesh = new TriangleMesh;
+        std::cout<<"obj surface number: "<<surfaces.size()<<std::endl;
+        std::cout <<"obj vertex number: "<<points.size()<<std::endl;
+        for (auto const &point:points) {
+            mesh->vertex.push_back(vec3f(point.x, point.y, point.z));
+        }
+
+        for (auto const &surface:surfaces) {
+            int global_v0 = surface.x;
+            int global_v1 = surface.y;
+            int global_v2 = surface.z;
+            std::string surface_type = surface.type;
+
+            if (global_v0 == global_v1 || global_v0 == global_v2 || global_v1 == global_v2) {
+                // std::cout<<"a triangle is not valid, identifier: "<<global_v0<<std::endl;
+                continue;
+            }
 
 
+
+            mesh->index.push_back(vec3i(global_v0, global_v1, global_v2));
+            vec3f vx = points[global_v0];
+            vec3f vy = points[global_v1];
+            vec3f vz = points[global_v2];
+            vec3f normal = normalize(cross(vy - vx, vz - vx));
+            mesh->normal.push_back(normal);
+            mesh->globalID.push_back(++max_global_idx);
+
+            int surface_type_id = surface_type_map[surface_type];
+            float surface_albedo = surface_albedo_map[surface_type];
+            mesh->surfaceType.push_back(surface_type_id);
+            mesh->albedo.push_back(surface_albedo);
+            total_triangles++;
+        }
+        mesh->diffuse = gdt::randomColor(total_triangles);
+
+        
+        assert(mesh->vertex.size() == points.size());
+        assert(mesh->index.size() == mesh->normal.size());
+        assert(mesh->index.size() == mesh->globalID.size());
+        if (mesh->vertex.size() > 0 && mesh->index.size() > 0){
+            model->meshes.push_back(mesh);
+            std::cout<<"obj mesh added"<<std::endl;
+                    Tree_index++;
+            }   else {
+                std::cout<<"Empty mesh, deleting Tree"<< Tree_index <<std::endl;
+                delete mesh;
+            }
 
         std::cout<<"bouding box low "<<model->bounds.lower.x<<" "<<model->bounds.lower.y<<" "<<model->bounds.lower.z<<std::endl;
         std::cout<<"bouding box high "<<model->bounds.upper.x<<" "<<model->bounds.upper.y<<" "<<model->bounds.upper.z<<std::endl;

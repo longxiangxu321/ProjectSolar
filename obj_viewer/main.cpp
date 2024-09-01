@@ -113,11 +113,11 @@ namespace osc {
   extern "C" int main(int ac, char **av)
   {
     try {
-      Model *model = loadWeatherStation(
+      Model *model = loadTUDelft(
 #ifdef _WIN32
       // on windows, visual studio creates _two_ levels of build dir
       // (x86/Release)
-      "../../models/Heino_processed_full.city.json"
+      "../../models/processed_tudelft.city.json", "../../models/observe_station_colored.obj"
 #else
       // on linux, common practice is to have ONE level of build dir
       // (say, <project>/build/)...

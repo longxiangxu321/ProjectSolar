@@ -73,37 +73,69 @@ namespace osc {
     Model* model = nullptr;
     int entry_count = 0;
 
-    std::filesystem::directory_iterator dir_iter(target_tiles);
+    // std::filesystem::directory_iterator dir_iter(target_tiles);
 
-    if (dir_iter == std::filesystem::directory_iterator()) {
-        std::cerr <<GDT_TERMINAL_RED<< "The directory: "<< target_tiles
-        <<" is empty or does not exist." <<GDT_TERMINAL_DEFAULT <<std::endl;
-        return 1;
-    } else {
-        // 读取第一个 entry
-        const auto& first_entry = *dir_iter;
-        if (first_entry.is_regular_file()) {
-            model = loadTUDelft(first_entry.path().string());
-            std::cout<<GDT_TERMINAL_GREEN<<"Model loaded"<<GDT_TERMINAL_DEFAULT<<std::endl;
+    // if (dir_iter == std::filesystem::directory_iterator()) {
+    //     std::cerr <<GDT_TERMINAL_RED<< "The directory: "<< target_tiles
+    //     <<" is empty or does not exist." <<GDT_TERMINAL_DEFAULT <<std::endl;
+    //     return 1;
+    // } else {
+    //     // 读取第一个 entry
+    //     const auto& first_entry = *dir_iter;
+    //     if (first_entry.is_regular_file()) {
+    //         model = loadTUDelft(first_entry.path().string());
+    //         std::cout<<GDT_TERMINAL_GREEN<<"Model loaded"<<GDT_TERMINAL_DEFAULT<<std::endl;
 
             
-            if (model == nullptr) {
-                std::cerr<<GDT_TERMINAL_RED << "Failed to load: " <<
-                first_entry.path().string() << GDT_TERMINAL_DEFAULT<<std::endl;
-            }
-        } else {
-            std::cerr << first_entry.path().string() << " is not a regular file." << std::endl;
-            return 1;
-        }
-        entry_count++;
+    //         if (model == nullptr) {
+    //             std::cerr<<GDT_TERMINAL_RED << "Failed to load: " <<
+    //             first_entry.path().string() << GDT_TERMINAL_DEFAULT<<std::endl;
+    //         }
+    //     } else {
+    //         std::cerr << first_entry.path().string() << " is not a regular file." << std::endl;
+    //         return 1;
+    //     }
+    //     entry_count++;
 
-        ++dir_iter;
-        if (dir_iter != std::filesystem::directory_iterator()) {
-            std::cerr<< GDT_TERMINAL_RED<< "There is more than one file in this folder, keep only one." 
-            <<GDT_TERMINAL_DEFAULT<< std::endl;
-            return 1;
-        }
-    }
+    //     ++dir_iter;
+    //     if (dir_iter != std::filesystem::directory_iterator()) {
+    //         std::cerr<< GDT_TERMINAL_RED<< "There is more than one file in this folder, keep only one." 
+    //         <<GDT_TERMINAL_DEFAULT<< std::endl;
+    //         return 1;
+    //     }
+    // }
+      std::vector<std::filesystem::path> obj_files;
+      std::filesystem::path json_file;
+      int json_count = 0;
+
+      for (const auto& entry : std::filesystem::directory_iterator(target_tiles)) {
+          if (entry.is_regular_file()) {
+              auto path = entry.path();
+              if (path.extension() == ".json") {
+                  json_file = path;
+                  json_count++;
+              } else if (path.extension() == ".obj") {
+                  obj_files.push_back(path);
+              }
+          }
+      }
+
+      if (json_count == 0) {
+          std::cerr << GDT_TERMINAL_RED << "No cityjson file found in the directory." << GDT_TERMINAL_DEFAULT << std::endl;
+          return 1;
+      } else if (json_count > 1) {
+          std::cerr << GDT_TERMINAL_RED << "There is more than cityjson file in this folder, keep only one." << GDT_TERMINAL_DEFAULT << std::endl;
+          return 1;
+      }
+
+      model = loadTUDelft(json_file.string(), obj_files[0].string());
+      std::cout << GDT_TERMINAL_GREEN << "Model loaded from " << json_file.string() << " and "<< obj_files[0].string()<< GDT_TERMINAL_DEFAULT << std::endl;
+
+      if (model == nullptr) {
+          std::cerr << GDT_TERMINAL_RED << "Failed to load: " << json_file.string() << GDT_TERMINAL_DEFAULT << std::endl;
+          return 1;
+      }
+
 
       model->transformModel();
       SampleRenderer *renderer = new SampleRenderer(model);

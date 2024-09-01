@@ -152,7 +152,7 @@ void save_point_grid(const std::vector<GridPoint> &grid_n, const vec3f &translat
         output_stream << std::setprecision(6) 
         << gp.position.x - translation.x << " " << gp.position.y - translation.y << " " << gp.position.z - translation.z<< " "
         << gp.triangle_info.direction.x << " "<< gp.triangle_info.direction.y << " "<< gp.triangle_info.direction.z << " "
-        << gp.triangle_info.surface_albedo << " "<< gp.area<< " " << index<<"\n";
+        << gp.triangle_info.surface_albedo << " "<< gp.area<< " " << index<< " "<< gp.triangle_info.surf_gmlid<<"\n";
         index++;
     }
     output_stream.close();
