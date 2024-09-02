@@ -3,6 +3,34 @@
 #include <array>
 
 namespace osc {
+
+    inline vec3f compute_normal(vec3f vx, vec3f vy, vec3f vz) {
+        vec3d dvx = vec3d(vx.x, vx.y, vx.z);
+        vec3d dvy = vec3d(vy.x, vy.y, vy.z);
+        vec3d dvz = vec3d(vz.x, vz.y, vz.z);
+
+        vec3d edge1 = dvy - dvx;
+        vec3d edge2 = dvz - dvx;
+
+        double length1 = length(edge1);
+        double length2 = length(edge2);
+
+        if (length1 != 0) {
+            edge1 = edge1 / length1;  // 归一化 edge1
+        }
+
+        if (length2 != 0) {
+            edge2 = edge2 / length2;  // 归一化 edge2
+        }
+
+        vec3f scaled_edge_1 = vec3f(edge1.x, edge1.y, edge1.z);
+        vec3f scaled_edge_2 = vec3f(edge2.x, edge2.y, edge2.z);
+
+        vec3f normal = normalize(cross(scaled_edge_1, scaled_edge_2));
+
+        return normal;
+    }
+
     struct vec4_type {
         int x;
         int y;
@@ -430,6 +458,7 @@ namespace osc {
         for (auto const &lspt:lspts) {
             model->bounds.extend(lspt);
         }
+        
 
         int building_index = 0;
         int total_triangles = 0;
@@ -1027,7 +1056,7 @@ namespace osc {
                     double sx = x;
                     double sy = y;
                     points.push_back(vec3f(sx, sy, z));
-                    model->bounds.extend(vec3f(sx, sy, z));
+                    // model->bounds.extend(vec3f(sx, sy, z));
                 }
                 if (line[0] == 'u') {
                     std::stringstream ss(line);
@@ -1085,15 +1114,24 @@ namespace osc {
                 continue;
             }
 
-
+            if (global_v0 == 37 && global_v1 == 35 && global_v2 == 34)
+            {
+                mesh->globalID.push_back(55241912);
+                std::cout<<"found s1"<<std::endl;
+            }
+            else if (global_v0 == 2489 && global_v1 == 2494 && global_v2 == 2493)
+            {
+                std::cout<<"found s3"<<std::endl;
+                mesh->globalID.push_back(19125524);
+            }
+            else {
+                mesh->globalID.push_back(++max_global_idx);
+            }
 
             mesh->index.push_back(vec3i(global_v0, global_v1, global_v2));
-            vec3f vx = points[global_v0];
-            vec3f vy = points[global_v1];
-            vec3f vz = points[global_v2];
-            vec3f normal = normalize(cross(vy - vx, vz - vx));
+            vec3f normal = compute_normal(points[global_v0], points[global_v1], points[global_v2]);
             mesh->normal.push_back(normal);
-            mesh->globalID.push_back(++max_global_idx);
+            
 
             int surface_type_id = surface_type_map[surface_type];
             float surface_albedo = surface_albedo_map[surface_type];

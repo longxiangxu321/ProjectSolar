@@ -30,12 +30,6 @@ void calculate_mass_center(const vec3f &A, const vec3f &B, const vec3f &C, const
         
         float gp_area = triangle_info.triangle_area/pow(4,splits);
         if (current_depth > splits) gp_area = triangle_info.triangle_area/pow(4, current_depth);
-
-        // std::cout << vo.z << std::endl;
-
-        // output_stream << std::setprecision(10) << position.x << " " 
-        // << position.y << " " << position.z << " "
-        // << direction.x << " "<< direction.y << " "<< direction.z << " "<<surface_type<<"\n";
         
         // vec3f normal = vec3(direction.x(), direction.y(), direction.z());
         GridPoint gp(position, triangle_info, gp_area);
@@ -130,6 +124,7 @@ std::vector<GridPoint> create_point_grid(const Model& citymodel, float sampling_
 
                 Triangle_info triangle_info = {normal, surf_gmlid, surface_type, surface_albedo, triangle_area};
 
+
                 calculate_mass_center(v0, v1, v2, num_s, grid_current, 0, num_s+2, triangle_info);
 
 
@@ -149,8 +144,11 @@ void save_point_grid(const std::vector<GridPoint> &grid_n, const vec3f &translat
     std::ofstream output_stream(filename);
     int index = 0;
     for (const auto &gp : grid_n) {
-        output_stream << std::setprecision(6) 
-        << gp.position.x - translation.x << " " << gp.position.y - translation.y << " " << gp.position.z - translation.z<< " "
+        if (gp.triangle_info.surf_gmlid == 55241912 || gp.triangle_info.surf_gmlid == 19125524) {
+            std::cout<< "gmlid " << gp.triangle_info.surf_gmlid << " index "<< index<<std::endl;
+        }
+        output_stream << std::fixed<<std::setprecision(6)
+        << gp.position.x - static_cast<float>(translation.x) << " " << gp.position.y -static_cast<float>(translation.y) << " " << gp.position.z - static_cast<float>(translation.z)<< " "
         << gp.triangle_info.direction.x << " "<< gp.triangle_info.direction.y << " "<< gp.triangle_info.direction.z << " "
         << gp.triangle_info.surface_albedo << " "<< gp.area<< " " << index<< " "<< gp.triangle_info.surf_gmlid<<"\n";
         index++;
