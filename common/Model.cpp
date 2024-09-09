@@ -51,9 +51,9 @@ namespace osc {
     }
 
     std::map<std::string, int> surface_type_map = createSurfaceTypeMap();
-    std::map<std::string, float> surface_albedo_map = {{"WallSurface", 0.7}, 
+    std::map<std::string, float> surface_albedo_map = {{"WallSurface", 0.4}, 
                                     {"RoofSurface", 0.2}, {"GroundSurface", 0.2}, 
-                                    {"TIN", 0.2}, {"Tree", 0.3}, {"Window", 0.3}};
+                                    {"TIN", 0.05}, {"Tree", 0.3}, {"Window", 0.3}};
 
     std::vector<vec3f> transformMesh(const std::array<float, 16>& matrix, const std::array<float, 3>& translate) {
         const std::vector<vec3f> mesh = {
@@ -543,7 +543,8 @@ namespace osc {
                 
                 
                 
-                mesh->diffuse = gdt::randomColor(building_index);
+                // mesh->diffuse = gdt::randomColor(building_index);
+                mesh->diffuse = vec3f(0.5f, 0.5f, 0.5f);
 
                 
                 assert(mesh->vertex.size() == vertexMap.size());
@@ -626,7 +627,8 @@ namespace osc {
                     
                 }
                 
-                mesh->diffuse = gdt::randomColor(TIN_index);
+                // mesh->diffuse = gdt::randomColor(TIN_index);
+                mesh->diffuse = vec3f(0.6f, 0.8f, 0.2f);
  
                 
                 assert(mesh->vertex.size() == vertexMap.size());
@@ -712,7 +714,8 @@ namespace osc {
 
 
                 
-                mesh->diffuse = gdt::randomColor(Tree_index);
+                // mesh->diffuse = gdt::randomColor(Tree_index);
+                mesh->diffuse = vec3f(0.0f, 0.5f, 0.0f);
  
                 
                 // assert(mesh->vertex.size() == vertexMap.size());
@@ -755,6 +758,9 @@ namespace osc {
         std::unordered_set<std::string> targetTypes = {"WallSurface", "RoofSurface"};
 
         // std::map<int, int> vertexMap;
+        for (auto const &material:surface_albedo_map) {
+            std::cout<<"material: "<<material.first<<" albedo: "<<material.second<<std::endl;
+        }
 
         std::fstream input(jsonFile);
         json j;

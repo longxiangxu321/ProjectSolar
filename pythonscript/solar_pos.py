@@ -7,6 +7,43 @@ from datetime import datetime
 import os
 from cjio import cityjson
 
+
+def obtain_tud(config):
+    tz = config["timezone"]
+
+    lat, lon = config["lat"], config["long"]
+    times = pd.date_range(config["start_time"], config["end_time"], freq=config["frequency"], tz=tz)
+    solpos = solarposition.get_solarposition(times, lat, lon)
+    # remove nighttime
+    solpos = solpos.loc[solpos['apparent_elevation'] > 0, :]
+
+    solpos.reset_index(inplace=True)
+    solpos.columns.values[0] = 'timestep'
+    solpos.columns.values[0]='timestep'
+    ground_recording_filename = os.path.join(config["data_root"], "measured_data.csv")
+    ground_recording = pd.read_csv(ground_recording_filename)
+    solpos['timestep'] = pd.to_datetime(solpos['timestep']).dt.tz_localize(None)
+    ground_recording['local_time'] = pd.to_datetime(ground_recording['local_time'])
+    filtered_ground_recording = ground_recording.drop_duplicates(subset='local_time', keep='first').reset_index(drop=True)
+    filtered_sunpos = solpos[solpos['timestep'].isin(filtered_ground_recording['local_time'])]
+    filtered_sunpos.loc[:, 'timestep'] = filtered_sunpos['timestep'].dt.tz_localize(tz)
+
+    filtered_sunpos.set_index('timestep', inplace=True)
+    print("Number of sun positions: ", len(filtered_sunpos))
+    return filtered_sunpos
+
+def obtain_regular(config):
+    tz = config["timezone"]
+
+    lat, lon = config["lat"], config["long"]
+    times = pd.date_range(config["start_time"], config["end_time"], freq=config["frequency"], tz=tz)
+    solpos = solarposition.get_solarposition(times, lat, lon)
+    # remove nighttime
+    solpos = solpos.loc[solpos['apparent_elevation'] > 0, :]
+
+    return solpos
+     
+
 def main():
     current_file_path = os.path.abspath(__file__)
     current_dir = os.path.dirname(current_file_path)
@@ -17,13 +54,16 @@ def main():
         CONFIG = json.load(file)
     
     cfg = CONFIG["study_area"]
-    tz = cfg["timezone"]
 
-    lat, lon = cfg["lat"], cfg["long"]
-    times = pd.date_range(cfg["start_time"], cfg["end_time"], freq=cfg["frequency"], tz=tz)
-    solpos = solarposition.get_solarposition(times, lat, lon)
-    # remove nighttime
-    solpos = solpos.loc[solpos['apparent_elevation'] > 0, :]
+    scenario = CONFIG["scenario"]
+    if scenario == "tud":
+        print("obtaining solar position in tud scenario")
+        solpos = obtain_tud(cfg)
+    else:
+        print("obtaining solar position in regular scenario")
+        solpos = obtain_regular(cfg)
+
+
 
     current_time = datetime.now()
 

@@ -86,87 +86,6 @@ def pd_integrate_voxel_info(point_grid, irradiance_vals, voxel_dim, voxel_size, 
     df.set_index('voxel_idx', inplace=True)
     return df
 
-# def process_batch(batch_start, batch_end, hemisphere_resolution, voxel_grid, num_timestep, shared_index_map_name, shared_azimuth_map_name, shared_elevation_map_name):
-#     # 通过共享内存加载数据
-#     n_azimuth = 360//hemisphere_resolution[0]
-#     n_elevation = 90//hemisphere_resolution[1]
-#     num_samples = n_azimuth * n_elevation
-
-#     existing_index_map = np.memmap(shared_index_map_name, dtype=np.uint32, mode='r')
-#     existing_azimuth_map = np.memmap(shared_azimuth_map_name, dtype=np.float16, mode='r')
-#     existing_elevation_map = np.memmap(shared_elevation_map_name, dtype=np.float16, mode='r')
-
-#     # 获取有效的 azimuth, elevation 和 voxel indexes
-#     azimuth_valid = existing_azimuth_map[batch_start*num_samples:batch_end*num_samples]
-#     elevation_valid = existing_elevation_map[batch_start*num_samples:batch_end*num_samples]
-#     voxel_indexes = existing_index_map[batch_start*num_samples:batch_end*num_samples]
-
-#     # 重建 voxel_grid，获取相关体素数据
-#     relevant_voxels = voxel_grid.reindex(voxel_indexes)
-#     not_exist_ids = relevant_voxels.isna().any(axis=1)
-#     fill_values = {
-#         'intensities': np.array([np.zeros(num_timestep) for _ in range(6)], dtype=np.float32)
-#     }
-#     fill_df = pd.DataFrame([fill_values], index=relevant_voxels[not_exist_ids].index)
-#     relevant_voxels.loc[not_exist_ids] = fill_df
-
-#     face_normals = np.array([
-#         [1, 0, 0],  # right
-#         [-1, 0, 0], # left
-#         [0, 1, 0],  # up
-#         [0, -1, 0], # down
-#         [0, 0, 1],  # front
-#         [0, 0, -1]  # back
-#     ])
-
-#     ray_directions = np.vstack((
-#         np.cos(elevation_valid) * np.cos(azimuth_valid),
-#         np.cos(elevation_valid) * np.sin(azimuth_valid),
-#         np.sin(elevation_valid)
-#     )).T  # 结果形状为 (num_samples, 3)
-
-#     results = np.zeros((batch_end - batch_start, num_timestep))
-
-#     # 计算 cos_values，形状为 (batch_end - batch_start, num_samples, 6)
-#     # 将 cos_values 展平为 (batch_end - batch_start) * num_samples * 6, 1
-#     # 通过广播将 cos_values 扩展为与 all_intensities 匹配的形状 (batch_end - batch_start) * num_samples * 6, num_timestep
-    
-#     cos_values_tiled = np.tile(np.maximum(np.dot(ray_directions, face_normals.T), 0).reshape(-1, 1), (1, num_timestep))  # 形状为 ((batch_end - batch_start) * num_samples * 6, num_timestep)
-
-#     # 获取所有强度值，形状为 (batch_end - batch_start) * num_samples * 6, num_timestep
-#     all_intensities = np.concatenate(relevant_voxels['intensities'].to_numpy())* (2 * np.pi / num_samples)
-
-#     ray_id = np.arange(num_samples)
-#     iy = ray_id // n_azimuth
-#     phi = np.radians(90 - iy * (90 / n_elevation))  # 将 phi 转为弧度
-#     cos_phi = np.cos(phi).reshape(-1, 1)  # 将 cos_phi 形状调整为 (num_samples, 1)
-
-
-#     # cos_phi_expanded = np.tile(np.tile(cos_phi, (batch_end - batch_start) * 6).reshape(-1, 1), (1, num_timestep))
-#     # # cos_phi_expanded = (cos_phi_expanded, (1, num_timestep))
-
-
-#     # # 计算逐元素相乘的结果
-#     # # 将所有强度贡献重新聚合到 (batch_end - batch_start, num_timestep) 形状
-#     # # breakpoint()
-#     # intensity_contributions_reshaped = (cos_values_tiled * all_intensities * cos_phi_expanded).reshape(batch_end - batch_start, num_samples, 6, num_timestep)
-
-#     # # 沿着样本维度和面维度累加强度贡献，得到每个目标点的最终结果
-#     # results = np.sum(intensity_contributions_reshaped, axis=(1, 2))
-
-#     cos_phi_expanded = np.tile(cos_phi, (batch_end - batch_start) * 6).reshape(-1, 1)
-
-#     # 首先进行不扩展到 num_timestep 的乘积
-#     intermediate_product = cos_values_tiled * all_intensities * cos_phi_expanded  # 形状为 ((batch_end - batch_start) * num_samples * 6, num_timestep)
-
-#     # 最后再扩展到 num_timestep 并 reshape
-#     intensity_contributions_reshaped = intermediate_product.reshape(batch_end - batch_start, num_samples, 6, num_timestep)
-
-#     # 沿着样本维度和面维度累加强度贡献，得到每个目标点的最终结果
-#     results = np.sum(intensity_contributions_reshaped, axis=(1, 2))
-
-
-#     return results
 
 def process_batch(batch_start, batch_end, hemisphere_resolution, voxel_grid, num_timestep, shared_index_map_name, shared_cos_factor_map_name):
     # 通过共享内存加载数据
@@ -220,33 +139,6 @@ def batch_update_grid_point_irradiance(point_grid, voxel_grid, irradiance, index
     num_points = point_grid.shape[0]
     updated_irradiance = irradiance.copy()
     num_time_steps = irradiance.shape[1]
-
-    # index_map_shape = index_map.shape
-
-    # batch_start = 0
-    # batch_end = batch_size
-    # lp = LineProfiler()
-    # lp_wrapper = lp(process_batch)
-    # lp_wrapper(batch_start, batch_end, hemisphere_resolution, voxel_grid, num_time_steps, index_map.filename, cos_factor_map.filename)
-    # lp.print_stats()
-
-    # result_test = process_batch(batch_start, batch_end, num_samples, voxel_grid, num_time_steps, index_map.filename, azimuth_map.filename, elevation_map.filename)
-
-    
-    # with ProcessPoolExecutor() as executor:
-    #     futures = []
-    #     for i in range(0, num_points, batch_size):
-    #         batch_start = i
-    #         batch_end = min(i + batch_size, num_points)
-    #         futures.append(
-    #             executor.submit(process_batch, batch_start, batch_end, hemisphere_resolution, voxel_grid, num_time_steps, index_map.filename, cos_factor_map.filename)
-    #         )
-
-    #     for future in tqdm(as_completed(futures), total=len(futures), desc="Processing points"):
-    #         result, batch_start, batch_end = future.result()
-    #         updated_irradiance[batch_start:batch_end] += result
-
-    # return updated_irradiance
 
     for i in tqdm(range(0, num_points, batch_size)):
         batch_start = i
@@ -351,10 +243,26 @@ def obtain_epw(epw_filename, sunpos_filename):
                 # all_dni_extra.append(dni_extra)
             else:
                 print("error finding match")
-    
-    epw_data = np.column_stack((all_ghi, all_dhi, all_dni))
+
+    epw_data = np.column_stack((all_ghi, all_dhi, all_dni))    
     return epw_data
 
+
+def obtain_tud(ground_recording_filename, sunpos_filename):
+    sunpos = pd.read_csv(sunpos_filename)
+    sunpos.columns.values[0]='timestamp'
+    ground_recording = pd.read_csv(ground_recording_filename)
+    sunpos['timestamp'] = pd.to_datetime(sunpos['timestamp']).dt.tz_localize(None)
+    ground_recording['local_time'] = pd.to_datetime(ground_recording['local_time'])
+    filtered_ground_recording = ground_recording[ground_recording['local_time'].isin(sunpos['timestamp'])]
+    filtered_ground_recording = filtered_ground_recording.drop_duplicates(subset='local_time', keep='first').reset_index(drop=True)
+    all_ghi = np.zeros(filtered_ground_recording.shape[0])
+    all_dni = filtered_ground_recording['DNI'].values
+    all_dhi = filtered_ground_recording['DHI'].values
+
+    tud_data = np.column_stack((all_ghi, all_dhi, all_dni))
+    
+    return tud_data
 
 if __name__=="__main__":
     current_file_path = os.path.abspath(__file__)
@@ -406,9 +314,17 @@ if __name__=="__main__":
     solar_position = read_sunpos(solar_position_path)
     shadow_result = np.memmap(shadow_map_path, dtype=bool, mode='r')
     # weather_data = np.random.randint(0, 1000, size=(solar_position.shape[0], 3))
-    epw_filename = os.path.join(folder_path, CONFIG['epw_file'])
-    weather_data = obtain_epw(epw_filename, solar_position_path)
-    np.save(os.path.join(data_root, 'weather_data.npy'), weather_data)
+    scenario = CONFIG["scenario"]
+    if scenario == "tud":
+        print("Reading TUD scenario weather data")
+        ground_records_path = os.path.join(folder_path, "measured_data.csv")
+        weather_data = obtain_tud(ground_records_path, solar_position_path)
+        # np.save(os.path.join(data_root, 'weather_data.npy'), weather_data)
+    else:
+        print("Reading regular scenario weather data")
+        epw_filename = os.path.join(folder_path, CONFIG['epw_file'])
+        weather_data = obtain_epw(epw_filename, solar_position_path)
+        np.save(os.path.join(data_root, 'weather_data.npy'), weather_data)
 
     svf_new_shape = svf_data[:,np.newaxis]
     svf_map = svf_new_shape.astype(np.float32)/num_samples
@@ -425,6 +341,7 @@ if __name__=="__main__":
 
     
     print("Calculating global irradiance")
+    print("Number of bounces", num_bounces)
     for i in range(num_bounces):
         print(f"Calculating bounce {i+1}")
         voxel_grid = pd_integrate_voxel_info(point_grid, irradiance_list[i], voxel_dimension, voxel_size, bbox_min)

@@ -113,11 +113,12 @@ namespace osc {
   extern "C" int main(int ac, char **av)
   {
     try {
-      Model *model = loadTUDelft(
+      Model *model = loadWeatherStation(
 #ifdef _WIN32
       // on windows, visual studio creates _two_ levels of build dir
       // (x86/Release)
-      "../../models/processed_tudelft.city.json", "../../models/observe_station_colored.obj"
+      // "../../models/processed_tudelft.city.json", "../../models/observe_station_colored.obj"
+      "../../models/Heino_processed_full.city.json"
 #else
       // on linux, common practice is to have ONE level of build dir
       // (say, <project>/build/)...
@@ -127,9 +128,10 @@ namespace osc {
       // Camera camera = { /*from*/vec3f(-10.07f, 20.681f, -2.7304f),
       //                   /* at */model->bounds.center()-vec3f(0,400,0),
       //                   /* up */vec3f(0.f,1.f,0.f) };
-      // model->transformModel();
-      vec3f lookfrom = model->bounds.center() + vec3f(0, 0, 1000);
-      vec3f lookat = model->bounds.center();
+      model->transformModel();
+      vec3f lookfrom = model->bounds.center() + vec3f(0, 0, 50);
+      vec3f lookat = model->bounds.center() + vec3f(10,-10,0);
+      std::cout<<lookat.x<<" "<<lookat.y<<" "<<lookat.z<<std::endl;
 
       Camera camera = { /*from*/ lookfrom,
                   /* at */ lookat,

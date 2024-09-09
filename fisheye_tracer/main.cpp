@@ -138,6 +138,7 @@ namespace osc {
       }
 
       model = loadTUDelft(json_file.string(), obj_files[0].string());
+      // model = loadWeatherStation(json_file.string());
       std::cout << GDT_TERMINAL_GREEN << "Model loaded from " << json_file.string() << " and "<< obj_files[0].string()<< GDT_TERMINAL_DEFAULT << std::endl;
 
       if (model == nullptr) {

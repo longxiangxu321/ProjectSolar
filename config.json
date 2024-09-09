@@ -1,13 +1,13 @@
 {
     "area_per_point": 9,
-    "azimuth_resolution": 3,
-    "elevation_resolution": 3,
+    "azimuth_resolution": 5,
+    "elevation_resolution": 5,
     "epw_file": "rotterdam.epw",
     "global_irradiance_time": 1834.2714636325836,
     "irradiance_batch_size": 500,
     "irradiance_model": "isotropic",
-    "num_bounces": 3,
-    "output_folder_name": "output_20240902_125140",
+    "num_bounces": 5,
+    "output_folder_name": "output_20240909_161327",
     "result": {
         "bbox_max": [
             85675.1015625,
@@ -19,22 +19,23 @@
             445805.0,
             -3.7470016479492188
         ],
-        "global_irradiance_time": 17338.383217811584,
-        "num_timesteps": 14,
-        "shadow_calculation_time": 0.09998779743909836,
-        "viewshed_rendering_time": 72.8329849243164,
-        "voxel_dim_x": 47,
-        "voxel_dim_y": 48,
-        "voxel_dim_z": 4
+        "global_irradiance_time": 5390.159925460815,
+        "num_timesteps": 6,
+        "shadow_calculation_time": 0.23055589199066162,
+        "viewshed_rendering_time": 31.320194244384766,
+        "voxel_dim_x": 131,
+        "voxel_dim_y": 131,
+        "voxel_dim_z": 11
     },
+    "scenario": "tud",
     "study_area": {
         "data_root": "./data/TUDelft",
-        "end_time": "2020-08-21 00:00:00",
+        "end_time": "2021-01-23 00:00:00",
         "frequency": "h",
         "lat": 52.00091589108101,
         "long": 4.372930257905266,
-        "start_time": "2020-08-20 00:00:00",
+        "start_time": "2021-01-22 00:00:00",
         "timezone": "Europe/Amsterdam"
     },
-    "voxel_resolution": 25
+    "voxel_resolution": 9
 }
