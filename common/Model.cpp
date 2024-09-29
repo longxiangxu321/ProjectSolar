@@ -31,6 +31,12 @@ namespace osc {
         return normal;
     }
 
+    inline double compute_area(vec3f vx, vec3f vy, vec3f vz) {
+        vec3f cross_product = cross(vz-vx, vy-vx);
+        double area = length(cross_product);
+        return area;
+    }
+
     struct vec4_type {
         int x;
         int y;
@@ -52,7 +58,7 @@ namespace osc {
 
     std::map<std::string, int> surface_type_map = createSurfaceTypeMap();
     std::map<std::string, float> surface_albedo_map = {{"WallSurface", 0.4}, 
-                                    {"RoofSurface", 0.2}, {"GroundSurface", 0.2}, 
+                                    {"RoofSurface", 0.1}, {"GroundSurface", 0.2}, 
                                     {"TIN", 0.05}, {"Tree", 0.3}, {"Window", 0.3}};
 
     std::vector<vec3f> transformMesh(const std::array<float, 16>& matrix, const std::array<float, 3>& translate) {
@@ -120,6 +126,57 @@ namespace osc {
 
         bounds = box3f(bounds.lower - bounds.lower, bounds.upper - bounds.lower);
         
+    }
+
+    void obtain_model_statistics_and_save_area_info(const Model* model, const std::string filename) {
+        int building_face_num = 0;
+        int tin_face_num = 0;
+        int tree_face_num = 0;
+        int total_face = 0;
+
+        std::filesystem::path filepath = filename;
+
+
+        double total_area = 0;
+
+        std::vector<double> all_areas;
+
+        for (auto const all_mesh:model->meshes) {
+            for (int i = 0; i <all_mesh->surfaceType.size();i++){
+                int temp_type = all_mesh->surfaceType[i];
+                if (temp_type==3) {tin_face_num++;}
+                else if (temp_type==4) {tree_face_num++;}
+                else {building_face_num++;}
+
+                vec3f v0 = all_mesh->vertex[all_mesh->index[i][0]];
+                vec3f v1 = all_mesh->vertex[all_mesh->index[i][1]];
+                vec3f v2 = all_mesh->vertex[all_mesh->index[i][2]];
+
+                double area = compute_area(v0,v1,v2);
+                total_area+=area;
+                total_face++;
+                all_areas.push_back(area);
+            }
+        }
+
+        double avg_area = total_area/total_face;
+        std::cout<<"average triangle area "<<  avg_area<<std::endl;
+
+        std::ofstream areaFile(filepath, std::ios::binary | std::ios::out);
+
+        double *areas = all_areas.data();
+
+        if (!areaFile) {
+            std::cerr << "cannot create shadow_map" << std::endl;
+        }
+
+        areaFile.write(reinterpret_cast<const char*>(areas), total_face* sizeof(double));
+
+
+
+        std::cout<<"Building face number "<<building_face_num<<std::endl;
+        std::cout<<"TIN face number "<<tin_face_num<<std::endl;
+        std::cout<<"Tree face number "<<tree_face_num<<std::endl;
     }
 
 
@@ -462,8 +519,8 @@ namespace osc {
 
         int building_index = 0;
         int total_triangles = 0;
-        int TIN_index = 0;
         int Tree_index = 0;
+        int TIN_index = 0;
 
         TriangleMesh *mesh = nullptr;
         std::map<int, int> vertexMap;
@@ -734,9 +791,6 @@ namespace osc {
             }
         }
 
-        
-
-
 
         std::cout<<"bouding box low "<<model->bounds.lower.x<<" "<<model->bounds.lower.y<<" "<<model->bounds.lower.z<<std::endl;
         std::cout<<"bouding box high "<<model->bounds.upper.x<<" "<<model->bounds.upper.y<<" "<<model->bounds.upper.z<<std::endl;
@@ -775,6 +829,8 @@ namespace osc {
         int total_triangles = 0;
         int TIN_index = 0;
         int Tree_index = 0;
+
+        int TIN_num_faces = 0;
 
         TriangleMesh *mesh = nullptr;
         std::map<int, int> vertexMap;
@@ -1077,6 +1133,7 @@ namespace osc {
                         currentSurfaceType = "Window";
                     } else if (material == "material_3") {
                         currentSurfaceType = "Tree";
+                        Tree_index++;
                     } else {
                         currentSurfaceType = "Unknown";  // 未知的 material
                     }
@@ -1154,9 +1211,9 @@ namespace osc {
         if (mesh->vertex.size() > 0 && mesh->index.size() > 0){
             model->meshes.push_back(mesh);
             std::cout<<"obj mesh added"<<std::endl;
-                    Tree_index++;
+                    // Tree_index++;
             }   else {
-                std::cout<<"Empty mesh, deleting Tree"<< Tree_index <<std::endl;
+                // std::cout<<"Empty mesh, deleting Tree"<< Tree_index <<std::endl;
                 delete mesh;
             }
 

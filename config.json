@@ -6,8 +6,8 @@
     "global_irradiance_time": 1834.2714636325836,
     "irradiance_batch_size": 500,
     "irradiance_model": "isotropic",
-    "num_bounces": 5,
-    "output_folder_name": "output_20240909_161327",
+    "num_bounces": 2,
+    "output_folder_name": "output_20240911_205946",
     "result": {
         "bbox_max": [
             85675.1015625,
@@ -19,10 +19,10 @@
             445805.0,
             -3.7470016479492188
         ],
-        "global_irradiance_time": 5390.159925460815,
-        "num_timesteps": 6,
-        "shadow_calculation_time": 0.23055589199066162,
-        "viewshed_rendering_time": 31.320194244384766,
+        "global_irradiance_time": 8017.015613794327,
+        "num_timesteps": 45,
+        "shadow_calculation_time": 0.24601151049137115,
+        "viewshed_rendering_time": 26.755939483642578,
         "voxel_dim_x": 131,
         "voxel_dim_y": 131,
         "voxel_dim_z": 11
@@ -30,11 +30,11 @@
     "scenario": "tud",
     "study_area": {
         "data_root": "./data/TUDelft",
-        "end_time": "2021-01-23 00:00:00",
-        "frequency": "h",
+        "end_time": "2021-02-02 00:00:00",
+        "frequency": "10min",
         "lat": 52.00091589108101,
         "long": 4.372930257905266,
-        "start_time": "2021-01-22 00:00:00",
+        "start_time": "2021-02-01 00:00:00",
         "timezone": "Europe/Amsterdam"
     },
     "voxel_resolution": 9

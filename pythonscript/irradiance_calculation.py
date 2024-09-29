@@ -181,7 +181,15 @@ def calculate_isotropic(point_grid, shadow_map, svf_map, weather_data, solar_pos
     direct_component = cos_delta * shadow_map * weather_data[:, 2].reshape(1, -1) # shape (N, M)
     diffuse_component = svf_map * weather_data[:, 1].reshape(1, -1) # shape (N, M)
 
-    return direct_component, diffuse_component
+    nz = point_normals[:, 2].reshape(-1, 1)
+    simplified_svf = (1 + nz) / 2
+    simplified_gvf = 1 - simplified_svf
+
+    # breakpoint()
+    simplified_diffuse = simplified_svf * weather_data[:, 1].reshape(1, -1)
+    simplified_reflective = 0.2 * simplified_gvf * weather_data[:,0].reshape(1, -1)
+
+    return direct_component, diffuse_component, simplified_diffuse, simplified_reflective
 
 
 def read_sunpos(file_path):
@@ -244,6 +252,7 @@ def obtain_epw(epw_filename, sunpos_filename):
             else:
                 print("error finding match")
 
+    # breakpoint()
     epw_data = np.column_stack((all_ghi, all_dhi, all_dni))    
     return epw_data
 
@@ -256,9 +265,12 @@ def obtain_tud(ground_recording_filename, sunpos_filename):
     ground_recording['local_time'] = pd.to_datetime(ground_recording['local_time'])
     filtered_ground_recording = ground_recording[ground_recording['local_time'].isin(sunpos['timestamp'])]
     filtered_ground_recording = filtered_ground_recording.drop_duplicates(subset='local_time', keep='first').reset_index(drop=True)
-    all_ghi = np.zeros(filtered_ground_recording.shape[0])
+    
     all_dni = filtered_ground_recording['DNI'].values
     all_dhi = filtered_ground_recording['DHI'].values
+
+    cos_theta = np.cos(np.radians(90 - filtered_ground_recording['sun_altitude'].values))
+    all_ghi = all_dhi + all_dni * cos_theta
 
     tud_data = np.column_stack((all_ghi, all_dhi, all_dni))
     
@@ -324,6 +336,7 @@ if __name__=="__main__":
         print("Reading regular scenario weather data")
         epw_filename = os.path.join(folder_path, CONFIG['epw_file'])
         weather_data = obtain_epw(epw_filename, solar_position_path)
+        # breakpoint()
         np.save(os.path.join(data_root, 'weather_data.npy'), weather_data)
 
     svf_new_shape = svf_data[:,np.newaxis]
@@ -332,9 +345,16 @@ if __name__=="__main__":
 
     start_time = time.time()
     print("Calculating direct beam and sky diffuse irradiance")
-    direct_irradiance, diffuse_irradiance = calculate_isotropic(point_grid, shadow_map, svf_map, weather_data, solar_position)
+    direct_irradiance, diffuse_irradiance, simplified_diffuse, simplified_reflective = calculate_isotropic(point_grid, shadow_map, svf_map, weather_data, solar_position)
     print("Direct beam and sky diffuse irradiance calculated")
+    end_time_direct_diffuse = time.time()
+    exec_time_direct_diffuse = end_time_direct_diffuse- start_time
+    CONFIG["result"]["direct_diffuse_time"] = exec_time_direct_diffuse
+    print("Time for direct and diffuse computation: ", exec_time_direct_diffuse)
     irradiance = direct_irradiance + diffuse_irradiance
+
+    simplified_values = np.stack([direct_irradiance, simplified_diffuse, simplified_reflective])
+    np.save(os.path.join(data_root, 'simplified_irradiance.npy'), simplified_values)
 
 
     irradiance_list = [irradiance]
@@ -364,5 +384,6 @@ if __name__=="__main__":
         json.dump(CONFIG, file, indent=4)
 
     np.save(os.path.join(data_root, 'irradiance.npy'), irradiance_arr)
+
 
 

@@ -7,6 +7,7 @@
 #include <tuple>
 #include "3rdParty/json.hpp"
 #include <unordered_set>
+#include <filesystem>
 using json = nlohmann::json;
 
 namespace osc {
@@ -38,7 +39,11 @@ namespace osc {
         box3f bounds;
 
         void transformModel();
+        
     };
+
+    void obtain_model_statistics_and_save_area_info(const Model* model, const std::string filename);
+    // void obtain_model_statistics_and_save_area_info(const Model* model);
 
     std::vector<vec3f> get_coordinates(const json& j, bool translate);
 
@@ -49,6 +54,8 @@ namespace osc {
     Model *loadWeatherStation(const std::string &jsonFile);
 
     Model *loadTUDelft(const std::string &jsonFile, const std::string &objFile);
+
+    
 
     // void loadTUDOBJ(const std::string &objFile);
     
