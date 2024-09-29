@@ -2,7 +2,7 @@
 #include <map>
 #include <array>
 
-namespace osc {
+namespace solarcity {
 
     inline vec3f compute_normal(vec3f vx, vec3f vy, vec3f vz) {
         vec3d dvx = vec3d(vx.x, vx.y, vx.z);

@@ -22,7 +22,7 @@
 #include <assert.h>
 
 /*! \namespace osc - Optix Siggraph Course */
-namespace osc {
+namespace solarcity {
 
   /*! simple wrapper for creating, and managing a device-side CUDA
       buffer */

@@ -29,8 +29,8 @@
 #include <filesystem>
 
 #include "read_solar.h"
-/*! \namespace osc - Optix Siggraph Course */
-namespace osc {
+
+namespace solarcity {
 
   
   /*! main entry point to this example - initially optix, print hello

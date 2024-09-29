@@ -18,9 +18,9 @@
 
 #include "LaunchParams.h"
 
-using namespace osc;
+using namespace solarcity;
 
-namespace osc {
+namespace solarcity {
   
   /*! launch parameters in constant memory, filled in by optix upon
       optixLaunch (this gets filled in from the buffer we pass to

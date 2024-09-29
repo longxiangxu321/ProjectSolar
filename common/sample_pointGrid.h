@@ -8,7 +8,7 @@
 
 using json = nlohmann::json;
 
-namespace osc {
+namespace solarcity {
 
     struct Triangle_info {
         vec3f direction;

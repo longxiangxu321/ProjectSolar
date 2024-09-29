@@ -20,7 +20,7 @@
 #include "sample_pointGrid.h"
 #include "optix7.h"
 
-namespace osc {
+namespace solarcity {
   using namespace gdt;
 
   struct TriangleMeshSBTData {

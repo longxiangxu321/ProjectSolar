@@ -11,7 +11,7 @@
 
 using json = nlohmann::json;
 
-namespace osc {
+namespace solarcity {
 
     using namespace gdt;
 

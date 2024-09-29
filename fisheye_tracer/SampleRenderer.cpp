@@ -20,7 +20,7 @@
 #include<cmath>
 
 /*! \namespace osc - Optix Siggraph Course */
-namespace osc {
+namespace solarcity {
 
   extern "C" char embedded_ptx_code[];
 
@@ -670,6 +670,9 @@ namespace osc {
     incident_factorBuffer.download(h_cos_cos,
                                   launchParams.n_cameras*launchParams.n_azimuth*launchParams.n_elevation*6);
   }
+
+
+
 
   void SampleRenderer::downloadHorizonFactors(float h_horizon_factors[])
   {

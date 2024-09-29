@@ -19,8 +19,8 @@
 #include <optix_function_table_definition.h>
 #include<cmath>
 
-/*! \namespace osc - Optix Siggraph Course */
-namespace osc {
+
+namespace solarcity {
 
   extern "C" char embedded_ptx_code[];
 

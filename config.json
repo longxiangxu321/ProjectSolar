@@ -3,11 +3,9 @@
     "azimuth_resolution": 5,
     "elevation_resolution": 5,
     "epw_file": "rotterdam.epw",
-    "global_irradiance_time": 1834.2714636325836,
     "irradiance_batch_size": 500,
     "irradiance_model": "isotropic",
     "num_bounces": 2,
-    "output_folder_name": "output_20240911_205946",
     "result": {
         "bbox_max": [
             85675.1015625,
@@ -21,7 +19,7 @@
         ],
         "global_irradiance_time": 8017.015613794327,
         "num_timesteps": 45,
-        "shadow_calculation_time": 0.24601151049137115,
+        "shadow_calculation_time": 0.1772741973400116,
         "viewshed_rendering_time": 26.755939483642578,
         "voxel_dim_x": 131,
         "voxel_dim_y": 131,

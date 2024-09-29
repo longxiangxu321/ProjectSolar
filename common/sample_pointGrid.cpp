@@ -1,6 +1,6 @@
 #include "sample_pointGrid.h"
 
-namespace osc {
+namespace solarcity {
 
 void calculate_mass_center(const vec3f &A, const vec3f &B, const vec3f &C, const int splits,std::vector<GridPoint> &grid_n, const int &current_depth,
                             const int &max_depth, const Triangle_info triangle_info)

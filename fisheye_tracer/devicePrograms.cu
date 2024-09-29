@@ -20,9 +20,9 @@
 
 #define UINT32_MAX_VALUE 4294967295U
 
-using namespace osc;
+using namespace solarcity;
 
-namespace osc {
+namespace solarcity {
   
   /*! launch parameters in constant memory, filled in by optix upon
       optixLaunch (this gets filled in from the buffer we pass to

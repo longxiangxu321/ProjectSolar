@@ -1,6 +1,6 @@
 #include "read_solar.h"
 
-namespace osc {
+namespace solarcity {
 
 inline double degrees_to_radians(float degrees) {
     return degrees * M_PI / 180.0;
