@@ -714,9 +714,16 @@ namespace solarcity {
                 }
 
                 std::array<float, 3> translate_arr;
-                for (int i = 0; i < 3; ++i) {
-                    translate_arr[i] = co.value()["geographicalExtent"][i].get<float>();
-                }
+                // for (int i = 0; i < 3; ++i) {
+                //     translate_arr[i] = co.value()["geographicalExtent"][i].get<float>();
+                // }
+                int global_vertex_id = co.value()["geometry"][0]["boundaries"][0];
+                vec3f vx = lspts[global_vertex_id];
+                translate_arr[0] = vx.x;
+                translate_arr[1] = vx.y;
+                translate_arr[2] = vx.z;
+                    
+    
 
                 std::vector<vec3f> transformedcoords = transformMesh(transformation_matrix, translate_arr);
 

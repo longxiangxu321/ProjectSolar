@@ -18,9 +18,9 @@
 
 #include "LaunchParams.h"
 
-using namespace osc;
+using namespace solarcity;
 
-namespace osc {
+namespace solarcity {
   
   /*! launch parameters in constant memory, filled in by optix upon
       optixLaunch (this gets filled in from the buffer we pass to
@@ -81,6 +81,9 @@ namespace osc {
     const float cosDN  = 0.2f + .8f*fabsf(dot(rayDir,Ng));
     vec3f &prd = *(vec3f*)getPRD<vec3f>();
     prd = cosDN * sbtData.color;
+    // if (dot(rayDir,Ng)>0) {
+    //     prd = cosDN * vec3f(1.0f, 0.0f, 0.0f);
+    // }
   }
   
   extern "C" __global__ void __anyhit__radiance()

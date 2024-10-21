@@ -23,7 +23,7 @@
 #include <GLFW/glfw3.h>
 
 /*! \namespace osc - Optix Siggraph Course */
-namespace osc {
+namespace solarcity {
   using namespace gdt;
 
 

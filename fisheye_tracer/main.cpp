@@ -137,7 +137,14 @@ namespace solarcity {
           return 1;
       }
 
-      model = loadTUDelft(json_file.string(), obj_files[0].string());
+      std::string scenario = CFG["scenario"];
+      std::cout <<"scenario: " << scenario <<std::endl;
+      if (scenario == "weatherstation") {
+        model = loadWeatherStation(json_file.string());}
+      else if (scenario == "tud") {
+        model = loadTUDelft(json_file.string(), obj_files[0].string());}
+        
+      // model = loadTUDelft(json_file.string(), obj_files[0].string());
       // model = IO::loadWeatherStation(json_file.string());
       // std::cout << GDT_TERMINAL_GREEN << "Model loaded from " << json_file.string() << " and "<< obj_files[0].string()<< GDT_TERMINAL_DEFAULT << std::endl;
 

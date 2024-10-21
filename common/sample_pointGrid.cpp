@@ -150,7 +150,7 @@ void save_point_grid(const std::vector<GridPoint> &grid_n, const vec3f &translat
         output_stream << std::fixed<<std::setprecision(6)
         << gp.position.x - static_cast<float>(translation.x) << " " << gp.position.y -static_cast<float>(translation.y) << " " << gp.position.z - static_cast<float>(translation.z)<< " "
         << gp.triangle_info.direction.x << " "<< gp.triangle_info.direction.y << " "<< gp.triangle_info.direction.z << " "
-        << gp.triangle_info.surface_albedo << " "<< gp.area<< " " << index<< " "<< gp.triangle_info.surf_gmlid<<"\n";
+        << gp.triangle_info.surface_albedo << " "<< gp.area<< " " << gp.triangle_info.surface_type<< " "<< gp.triangle_info.surf_gmlid<<"\n";
         index++;
     }
     output_stream.close();

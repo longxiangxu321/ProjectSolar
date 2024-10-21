@@ -18,8 +18,8 @@
 // this include may only appear in a single source file:
 #include <optix_function_table_definition.h>
 
-/*! \namespace osc - Optix Siggraph Course */
-namespace osc {
+
+namespace solarcity {
 
   extern "C" char embedded_ptx_code[];
 

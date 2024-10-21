@@ -20,8 +20,8 @@
 #include "glfWindow/GLFWindow.h"
 #include <GL/gl.h>
 
-/*! \namespace osc - Optix Siggraph Course */
-namespace osc {
+
+namespace solarcity {
 
   struct SampleWindow : public GLFCameraWindow
   {
@@ -114,11 +114,20 @@ namespace osc {
   {
     try {
       Model *model = loadWeatherStation(
+        // Model *model = loadTUDelft(
 #ifdef _WIN32
       // on windows, visual studio creates _two_ levels of build dir
       // (x86/Release)
       // "../../models/processed_tudelft.city.json", "../../models/observe_station_colored.obj"
-      "../../models/Heino_processed_full.city.json"
+      // "../../models/Heino_processed_full.city.json"
+      //"../../models/RH.city.json"
+        // "../../models/delft_processed.city.json"
+        //"../../models/processed_rotterdam.city.json"
+           "../../models/processed_delft.city.json"
+          //"../../models/processed_amsterdam.city.json"
+
+        
+      
 #else
       // on linux, common practice is to have ONE level of build dir
       // (say, <project>/build/)...
@@ -129,6 +138,9 @@ namespace osc {
       //                   /* at */model->bounds.center()-vec3f(0,400,0),
       //                   /* up */vec3f(0.f,1.f,0.f) };
       model->transformModel();
+  
+      obtain_model_statistics_and_save_area_info(model, "../models/junks.txt");
+
       vec3f lookfrom = model->bounds.center() + vec3f(0, 0, 50);
       vec3f lookat = model->bounds.center() + vec3f(10,-10,0);
       std::cout<<lookat.x<<" "<<lookat.y<<" "<<lookat.z<<std::endl;

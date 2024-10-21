@@ -18,31 +18,34 @@ def assign_cityobject_attribute(cm):
         """
 
         global_idx = 0
-
-        # index = 0
         cm_copy = deepcopy(cm)
+        tree_idx = 0
 
         for i, cityobject in enumerate(cm_copy['CityObjects'].values()):
             if cityobject['type'] == 'BuildingPart' or cityobject['type'] == 'Building':
                 for geom_idx in range(len(cityobject['geometry'])):
-                    if cityobject['geometry'][geom_idx]["lod"]=="2":
+                    # breakpoint()
+                    if cityobject['geometry'][geom_idx]["lod"]==2:
                         semantics = cityobject['geometry'][geom_idx]['semantics']
                         new_semantics = {}
-
                         n_surfaces = []
                         n_values = []
+
                         for i in range(len(semantics['values'])):
                             sem_value = semantics['values'][i]
-                            previous_surf_semantic = semantics['surfaces'][sem_value]
-                            new_surf_semantic = deepcopy(previous_surf_semantic)
-                            new_surf_semantic['global_idx'] = global_idx
-                            n_surfaces.append(new_surf_semantic)
+                            new_surface_semantic = {}
+                            previous_surf_semantic = semantics['surfaces'][sem_value]['type']
+                            new_surface_semantic['type'] = previous_surf_semantic
+
+                            new_surface_semantic['global_idx'] = global_idx
+                            n_surfaces.append(new_surface_semantic)
                             n_values.append(i)
                             global_idx += 1
 
                         new_semantics['surfaces'] = n_surfaces
                         new_semantics['values'] = n_values
                         cityobject['geometry'][geom_idx]['semantics'] = new_semantics
+
             elif cityobject['type']=='TINRelief':
                 for geom_idx in range(len(cityobject['geometry'])):
                     num_triangles = len(cityobject['geometry'][geom_idx]['boundaries'])
@@ -64,7 +67,14 @@ def assign_cityobject_attribute(cm):
             elif cityobject['type'] == 'SolitaryVegetationObject':
                 attributes = cityobject['attributes']
                 attributes['global_idx'] = global_idx
+                geom_attri = {}
+                geom_attri["type"] = "GeometryInstance"
+                geom_attri["template"]=0
+                geom_attri["boundaries"]=[tree_idx]
+                geom_attri["transformationMatrix"]=[2.42, 0.0, 0.0, 0.0, 0.0, 2.42, 0.0, 0.0, 0.0, 0.0, 1.6, 0.0, 0.0, 0.0, 0.0, 1.0]
+                cityobject["geometry"].append(geom_attri)
                 cityobject['attributes'] = attributes
+                tree_idx+=1
                 global_idx += 1
 
 

@@ -21,8 +21,8 @@
 #include "LaunchParams.h"
 #include "Model.h"
 
-/*! \namespace osc - Optix Siggraph Course */
-namespace osc {
+
+namespace solarcity {
 
   struct Camera {
     /*! camera position - *from* where we are looking */
