@@ -6,7 +6,7 @@
     "irradiance_batch_size": 500,
     "irradiance_model": "isotropic",
     "num_bounces": 1,
-    "output_folder_name": "output_20241020_143957",
+    "output_folder_name": "output_20241113_190423",
     "result": {
         "bbox_max": [
             88515.0,
@@ -16,20 +16,18 @@
         "bbox_min": [
             81835.0,
             444326.125,
-            -24.412002563476562
+            -24.412002563476563
         ],
         "num_timesteps": 54,
-        "shadow_calculation_time": 1.5724155902862549,
-        "viewshed_rendering_time": 301.1038818359375,
+        "shadow_calculation_time": 1.6408805847167969,
+        "viewshed_rendering_time": 331.8875732421875,
         "voxel_dim_x": 743,
         "voxel_dim_y": 744,
-        "voxel_dim_z": 14,
-        "direct_diffuse_time": 16.214728355407715,
-        "global_irradiance_time": 39891.2765686512
+        "voxel_dim_z": 14
     },
     "scenario": "weatherstation",
     "study_area": {
-        "data_root": "./data/rotterdam",
+        "data_root": "./data/Delft",
         "end_time": "2021-02-02 00:00:00",
         "frequency": "10min",
         "lat": 52.01,
