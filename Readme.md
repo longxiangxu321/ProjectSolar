@@ -180,3 +180,25 @@ check `pythonscript/point_cloud_visualize.ipynb` for details
 
 
 
+# Current settings for fixed hyperparams
+
+```
+surface_type_map["WallSurface"] = 0;
+surface_type_map["RoofSurface"] = 1;
+surface_type_map["GroundSurface"] = 2;
+surface_type_map["TIN"] = 3;
+surface_type_map["Tree"] = 4;
+surface_type_map["Window"] = 5;
+```
+
+
+
+```
+surface_albedo_map = {{"WallSurface", 0.4}, 
+                      {"RoofSurface", 0.1}, 
+                      {"GroundSurface", 0.2}, 
+                      {"TIN", 0.05}, 
+                      {"Tree", 0.3}, 
+                      {"Window", 0.3}}
+```
+
